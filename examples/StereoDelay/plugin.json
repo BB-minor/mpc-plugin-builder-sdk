@@ -1,0 +1,14 @@
+{
+  "name": "Stereo Delay",
+  "manufacturer": "MPC SDK Examples",
+  "version": "1.0.0",
+  "kind": "effect",
+  "uid": "MxSd",
+  "numInputs": 2,
+  "numOutputs": 2,
+  "category": "Effect",
+  "file32": "VST/stereo-delay-arm32.so",
+  "file64": "VST/stereo-delay-arm64.so",
+  "description": "Tempo-synced or free stereo delay with filtered feedback and ping-pong mode.",
+  "license": "MIT"
+}

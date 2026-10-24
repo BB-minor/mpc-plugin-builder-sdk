@@ -1,0 +1,18 @@
+{
+  "pages": [
+    { "name": "KIT A",
+      "controls": [
+        "Kick Tune",  "Kick Decay",  "Kick Level",  "Master",
+        "Snare Tune", "Snare Decay", "Snare Level", "Routing",
+        "Clap Tune",  "Clap Decay",  "Clap Level",  { "widget": "empty" },
+        "CHat Tune",  "CHat Decay",  "CHat Level"
+      ] },
+    { "name": "KIT B",
+      "controls": [
+        "OHat Tune", "OHat Decay", "OHat Level", "Master",
+        "LTom Tune", "LTom Decay", "LTom Level", "Routing",
+        "HTom Tune", "HTom Decay", "HTom Level", { "widget": "empty" },
+        "Perc Tune", "Perc Decay", "Perc Level"
+      ] }
+  ]
+}

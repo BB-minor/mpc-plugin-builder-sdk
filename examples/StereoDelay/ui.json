@@ -1,0 +1,12 @@
+{
+  "pages": [
+    { "name": "DELAY",
+      "controls": [
+        "Sync",
+        { "param": "Division", "visibleWhen": { "param": "Sync", "choice": "On" } },
+        { "param": "Time",     "visibleWhen": { "param": "Sync", "choice": "Off" } },
+        "Feedback",
+        "Low Cut", "High Cut", "Ping Pong", "Mix"
+      ] }
+  ]
+}

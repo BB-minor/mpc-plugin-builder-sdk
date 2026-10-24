@@ -34,4 +34,4 @@ Create `plugins/<Name>/skins/` containing `TUI.json`, `Q-Links.json` and any ima
 - Tab area is 1280 × 628; overlays 1280 × 800; fonts Titillium Web / Roboto / Nexa only; images PNG/JPEG relative to the file; colours `AARRGGBB`.
 - Run `python tools/validate.py plugins/<Name>` after editing; it checks versions, indices and JSON validity.
 
-Custom knob graphics: `python tools/make_knob.py --frames 127 --size 120 --out plugins/<Name>/assets/knob.png` then `"knobImage": "knob.png"` in `ui.json`.
+Custom knob graphics: `python tools/make_knob.py plugins/<Name>/assets/knob.png --frames 127 --size 120` then `"knobImage": "knob.png"` in `ui.json` (files in `assets/` are copied into `Plugin Skins/`).

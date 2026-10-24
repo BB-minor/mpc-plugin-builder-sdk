@@ -9,8 +9,11 @@
 //
 // Design rules baked in here (do not fight them):
 //   * The host may call the dispatcher from a UI thread while process() runs on
-//     the audio thread. Parameter values are atomics, state loads are deferred
-//     to the audio thread, and nothing here locks inside process().
+//     the audio thread. Parameter values are atomics. A state load writes the
+//     parameters and calls loadExtraState() on the UI thread, then reset() is
+//     called on the audio thread before the next block: keep extra state in a
+//     staging copy inside loadExtraState() and swap it in from reset().
+//     Nothing here locks inside process().
 //   * process() must never allocate, lock, log, or touch the filesystem.
 //   * Denormals are flushed to zero around every process() call on every CPU.
 //   * Only one symbol is exported from the library: VSTPluginMain.
@@ -439,6 +442,8 @@ public:
     void internalProcess(float** inputs, float** outputs, int numFrames)
     {
         ScopedDenormalsOff denormalsOff;
+        // Hosts normally prepare (sample rate, block size, resume) before processing, so this
+        // lazy prepare only runs if a host changes the sample rate without suspending first.
         if (!prepared_) { prepare(sampleRate_, blockSize_ > 0 ? blockSize_ : numFrames); prepared_ = true; }
         if (stateLoadPending_.exchange(false, std::memory_order_acq_rel)) reset();
         if (numFrames > blockSize_) blockSize_ = numFrames;

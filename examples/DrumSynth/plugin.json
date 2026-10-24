@@ -1,0 +1,14 @@
+{
+  "name": "Drum Synth",
+  "manufacturer": "MPC SDK Examples",
+  "version": "1.0.0",
+  "kind": "instrument",
+  "uid": "MxDr",
+  "numInputs": 0,
+  "numOutputs": 4,
+  "category": "Drums",
+  "file32": "VST/drum-synth-arm32.so",
+  "file64": "VST/drum-synth-arm64.so",
+  "description": "8 synthesized drum voices on MIDI notes 36-43 with per-drum tune/decay/level, two stereo output pairs and a routing switch.",
+  "license": "MIT"
+}

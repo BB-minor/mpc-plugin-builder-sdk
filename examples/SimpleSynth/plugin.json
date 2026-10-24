@@ -1,0 +1,14 @@
+{
+  "name": "Simple Synth",
+  "manufacturer": "MPC SDK Examples",
+  "version": "1.0.0",
+  "kind": "instrument",
+  "uid": "MxSy",
+  "numInputs": 0,
+  "numOutputs": 2,
+  "category": "Synth",
+  "file32": "VST/simple-synth-arm32.so",
+  "file64": "VST/simple-synth-arm64.so",
+  "description": "8-voice subtractive synthesizer: two PolyBLEP oscillators, SVF filter, two ADSRs, tempo-syncable LFO, glide.",
+  "license": "MIT"
+}

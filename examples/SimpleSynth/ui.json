@@ -1,0 +1,28 @@
+{
+  "pages": [
+    { "name": "OSC",
+      "controls": [
+        "Osc1 Wave", "Osc1 Octave", "Osc1 Level", "Glide",
+        "Osc2 Wave", "Osc2 Octave", "Osc2 Semi", "Osc2 Detune",
+        "Osc2 Level", "Pulse Width", "Bend Range", "Volume"
+      ] },
+    { "name": "FILTER",
+      "controls": [
+        "Cutoff", "Resonance", "Filter Mode", "Drive",
+        "Env Amount", "Key Track", { "widget": "empty" }, { "widget": "empty" },
+        "Filt Attack", "Filt Decay", "Filt Sustain", "Filt Release"
+      ] },
+    { "name": "AMP",
+      "controls": [
+        "Amp Attack", "Amp Decay", "Amp Sustain", "Amp Release",
+        "Volume", "Velocity"
+      ] },
+    { "name": "LFO",
+      "controls": [
+        "LFO Shape", "LFO Sync",
+        { "param": "LFO Rate", "visibleWhen": { "param": "LFO Sync", "choice": "Off" } },
+        { "param": "LFO Div",  "visibleWhen": { "param": "LFO Sync", "choice": "On" } },
+        "LFO>Pitch", "LFO>Filter", "Wheel Vib"
+      ] }
+  ]
+}
