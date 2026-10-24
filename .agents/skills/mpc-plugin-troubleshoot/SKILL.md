@@ -7,7 +7,7 @@ description: Diagnose an MPC plugin that does not appear, fails to load, shows n
 
 Work top-down; stop when the cause is found. Full list in `docs/troubleshooting.md`.
 
-1. **Not listed on the MPC** → Preferences → Enhancements (Beta): both *Enable Enhancements* and *VST2 Support* on? Folder inside `VST2 Plugins` at the drive root? `plugin.json` valid, `numOutputs > 0`, correct `file32`/`file64` for that MPC's architecture? Run `python tools/validate.py plugins/<Name>`.
+1. **Not listed on the MPC** → MPC OS 3.10.1 or later (Preferences → Info)? Older firmware ignores the folder. Preferences → Enhancements (Beta): both *Enable Enhancements* and *VST2 Support* on? Folder inside `VST2 Plugins` at the drive root? `plugin.json` valid, `numOutputs > 0`, correct `file32`/`file64` for that MPC's architecture? Run `python tools/validate.py plugins/<Name>`.
 2. **"VST2 failed to load"** → wrong architecture, glibc too new, extra library dependency, crash in `VSTPluginMain`. Validator + `host_sim ... test --verbose`. Try the internal drive instead of USB.
 3. **Loads, no tabs on the edit screen** → `TUI.json` failed to parse (version numbers, missing keys, trailing commas). Validate; regenerate from `ui.json` if hand edits broke it.
 4. **Knobs move the wrong thing** → `Q-Links.json` uses 0-based parameter indices and 1-based `Tab`; compare with `build/params.json`.

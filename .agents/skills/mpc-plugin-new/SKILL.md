@@ -47,4 +47,4 @@ python tools/build.py plugins/<Name>
 
 ## 5. Hand over
 
-Tell the user: the output folder path (`plugins/<Name>/build/<Manufacturer> - VST - <Name>/`), how to copy it to `VST2 Plugins` on a drive and switch on Preferences → Enhancements → VST2 Support, and offer to package it (`mpc-plugin-package` skill). Summarise the parameters and pages you created.
+Tell the user: the output folder path (`plugins/<Name>/build/<Manufacturer> - VST - <Name>/`), how to copy it to `VST2 Plugins` on a drive, that the MPC needs MPC OS 3.10.1 or later, and that VST plugins must be enabled on the device (Preferences → Enhancements (Beta) → Enable Enhancements and VST2 Support), and offer to package it (`mpc-plugin-package` skill). Summarise the parameters and pages you created.

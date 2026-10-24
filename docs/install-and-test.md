@@ -23,7 +23,7 @@ The `test` command fails on NaN/infinite output, crashes, and state that does no
 1. Build: `python tools/build.py plugins/MyPlugin`.
 2. Copy the whole folder `build/<Manufacturer> - VST - <Name>/` into a folder named exactly `VST2 Plugins` at the root of a USB drive or SD card (create `VST2 Plugins` if it does not exist). You can also copy it to the MPC's internal drive over USB in computer mode, or with the MPC's file browser from a drive.
 3. Insert the drive in the MPC.
-4. On the MPC: **Preferences → Enhancements (Beta)**: turn on **Enable Enhancements** and **VST2 Support**. Read the warning.
+4. On the MPC (must be running MPC OS 3.10.1 or later; check Preferences → Info and update if older): **Preferences → Enhancements (Beta)**: turn on **Enable Enhancements** and **VST2 Support**. Read the warning. The plugin stays hidden until both switches are on.
 5. Open the plugin browser (instrument track → plugin program → browse, or an insert slot). Your plugin is listed under **External VST Plugins**.
 
 Replacing a plugin: copy the new folder over the old one, then remove and re-add the plugin on the track (or restart the MPC if the skins changed).

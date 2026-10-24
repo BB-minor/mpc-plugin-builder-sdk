@@ -18,7 +18,9 @@ plugins/TapeDelay/              ──►  python tools/build.py plugins/TapeDel
                                      MPC: Preferences → Enhancements (Beta) → VST2 Support
 ```
 
-Runs on MPC X, X SE, Live, Live II, One, One+, Key 61, Key 37, Force (32-bit) and MPC Live III, MPC XL and later (64-bit) with MPC OS 3.x firmware that includes the "VST2 Support" enhancement.
+Runs on MPC X, X SE, Live, Live II, One, One+, Key 61, Key 37, Force (32-bit) and MPC Live III, MPC XL and later (64-bit).
+
+**Requires MPC OS 3.10.1 or later, with VST plugins enabled on the device**: Preferences → Enhancements (Beta) → turn on *Enable Enhancements* and *VST2 Support*. Earlier firmware ignores the `VST2 Plugins` folder entirely, and with the setting off the plugins stay hidden.
 
 ## Start here
 
@@ -57,7 +59,7 @@ Paste one of these into your agent with the SDK folder open:
 
 - Python 3.9 or newer. Everything else (the Zig cross compiler) is fetched on first build, or use your own GNU cross compilers / Docker (`docs/building.md`).
 - macOS, Windows or Linux.
-- An MPC with MPC OS 3.x and the VST2 Support enhancement, plus a USB drive or SD card.
+- An MPC running MPC OS 3.10.1 or later, with VST2 Support enabled in Preferences → Enhancements (Beta), plus a USB drive or SD card.
 
 ## How it works, briefly
 

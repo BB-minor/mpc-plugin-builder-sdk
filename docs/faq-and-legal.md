@@ -8,7 +8,7 @@ If you already have DSP code written for JUCE, iPlug2 or DPF, keep the DSP class
 
 ## Which MPCs are supported?
 
-Any standalone MPC running MPC OS 3.x firmware that has the **VST2 Support** enhancement in Preferences. 32-bit products (MPC X, X SE, Live, Live II, One, One+, Key 61, Key 37, Force) load the `file32` build; 64-bit products (MPC Live III, MPC XL and later) load the `file64` build. The MPC Studio, Studio Mk II and other controllers run on a computer and are not targets. The desktop MPC software is not a target either, though SDK plugins may well load there.
+Any standalone MPC running **MPC OS 3.10.1 or later**, with VST plugins enabled on the device (Preferences → Enhancements (Beta) → Enable Enhancements and VST2 Support). Older firmware cannot load third-party plugins at all. 32-bit products (MPC X, X SE, Live, Live II, One, One+, Key 61, Key 37, Force) load the `file32` build; 64-bit products (MPC Live III, MPC XL and later) load the `file64` build. The MPC Studio, Studio Mk II and other controllers run on a computer and are not targets. The desktop MPC software is not a target either, though SDK plugins may well load there.
 
 ## Can my plugin have a custom graphical interface?
 
@@ -32,7 +32,7 @@ Steinberg stopped licensing the VST2 SDK in 2018, but the binary interface is si
 
 ## What about the glibc / libstdc++ versions?
 
-The MPC's Linux has glibc 2.39 (MPC OS 3) and the GCC 13 C++ runtime. The SDK builds against glibc 2.31 and links the C++ runtime statically so the result loads on any 3.x firmware and does not depend on the MPC's compiler. `tools/validate.py` checks this.
+The MPC's Linux has glibc 2.39 (MPC OS 3) and the GCC 13 C++ runtime. The SDK builds against glibc 2.31 and links the C++ runtime statically so the result loads on any firmware from 3.10.1 onwards and does not depend on the MPC's compiler. `tools/validate.py` checks this.
 
 ## The community
 

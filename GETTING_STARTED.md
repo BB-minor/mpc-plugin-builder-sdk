@@ -1,6 +1,6 @@
 # Getting started
 
-You will have a plugin running on your MPC in about half an hour. You need: a Mac, Windows or Linux computer with Python 3.9+ and an AI coding agent (Claude Code or OpenAI Codex), an MPC standalone running MPC OS 3.x with the **VST2 Support** enhancement, and a USB stick or SD card.
+You will have a plugin running on your MPC in about half an hour. You need: a Mac, Windows or Linux computer with Python 3.9+ and an AI coding agent (Claude Code or OpenAI Codex), an MPC standalone running **MPC OS 3.10.1 or later** (earlier versions cannot load third-party plugins), and a USB stick or SD card.
 
 ## 1. Get the SDK
 
@@ -23,7 +23,7 @@ You should see a native build, two ARM builds, generated skins and a validator r
 
 1. Copy that folder into a folder called `VST2 Plugins` at the root of your USB stick or SD card (create it if it is not there).
 2. Put the drive in the MPC.
-3. Preferences → Enhancements (Beta) → turn on **Enable Enhancements** and **VST2 Support**. Read the warning: third-party plugins can crash the MPC; save often.
+3. Enable VST plugins on the device: Preferences → Enhancements (Beta) → turn on **Enable Enhancements** and **VST2 Support**. This switch only exists on MPC OS 3.10.1 and later; update the MPC first if you do not see it. Read the warning: third-party plugins can crash the MPC; save often.
 4. Add an insert effect to a track; the browser lists **External VST Plugins → Stereo Delay**. Play something. Press the function keys to switch pages; touch a control to grab the knobs.
 
 ## 4. Make your own

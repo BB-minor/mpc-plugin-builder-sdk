@@ -37,7 +37,7 @@ Put the plugin folder inside a folder named exactly `VST2 Plugins` at the root o
 
 The drive can be a USB stick, an SD card, or the MPC's internal drive. The MPC watches the `VST2 Plugins` folder of every attached drive. Only the direct children of `VST2 Plugins` are examined; nothing is searched recursively, and loose files there are ignored.
 
-The user must switch the feature on: **Preferences → Enhancements (Beta) → Enable Enhancements** and **VST2 Support**. With the setting off, plugins are hidden and projects that use them will not load them. The feature exists in MPC OS 3.x firmware that includes the "VST2 Support" enhancement.
+Third-party plugins are loaded only by **MPC OS 3.10.1 or later**; earlier firmware ignores the `VST2 Plugins` folder. The user must also enable VST plugins on the device: **Preferences → Enhancements (Beta) → Enable Enhancements** and **VST2 Support**. With the setting off, plugins are hidden and projects that use them will not load them.
 
 Plugins appear in the plugin browser under **External VST Plugins**. Instruments are used as plugin programs; effects are used as inserts.
 
