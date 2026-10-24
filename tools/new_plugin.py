@@ -21,7 +21,7 @@ import sys
 SDK_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TEMPLATES_DIR = os.path.join(SDK_ROOT, "templates")
 
-ILLEGAL_FILENAME_CHARS = '\\/:*?"<>|'
+ILLEGAL_FILENAME_CHARS = '"#@,;:<>*^|?\\/'  # the exact set the MPC strips when it builds the folder name
 
 
 # ---------------------------------------------------------------------------
@@ -61,7 +61,7 @@ def make_uid(vendor: str, name: str) -> str:
 
 
 def legal_filename(s: str) -> str:
-    return "".join(c for c in s if c not in ILLEGAL_FILENAME_CHARS and ord(c) >= 32)
+    return "".join(c for c in s if c not in ILLEGAL_FILENAME_CHARS)
 
 
 # ---------------------------------------------------------------------------

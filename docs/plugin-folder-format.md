@@ -22,7 +22,7 @@ Every plugin is one folder, named after the manufacturer and plugin name:
 Rules:
 
 - The folder name is `"<manufacturer> - VST - <name>"`, with the literal text ` - VST - ` in the middle. The two parts must equal the `manufacturer` and `name` strings in `plugin.json`, which must in turn equal the vendor and effect-name strings the binary reports to the host. The MPC finds the plugin's skins and `version.xml` by building this name from the strings the loaded plugin reports, so if they disagree the plugin still loads but gets the default UI.
-- Characters that are illegal in file names (`\ / : * ? " < > |` and control characters) are removed from the two parts when the name is built. Spaces and UTF-8 are fine.
+- When the MPC builds the name it removes these characters: `" # @ , ; : < > * ^ | ? \ /`. Use the same rule when you name the folder (the SDK tools do). Spaces and UTF-8 are fine. Keep the whole name under 128 characters.
 - If `manufacturer` is empty the folder is named `"VST - <name>"`. Always set a manufacturer.
 - The binaries can live anywhere inside the folder (the `VST/` subfolder is a convention); `plugin.json` gives their paths. They cannot be outside the folder.
 - Keep the folder self-contained. Anything the plugin needs at run time (wavetables, impulse responses) goes inside it.

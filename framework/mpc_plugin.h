@@ -21,6 +21,7 @@
 #include "mpc_vst2_abi.h"
 
 #include <atomic>
+#include <cstdarg>
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
@@ -241,7 +242,17 @@ struct Param
                                  return choices.empty() ? std::string() : choices[(size_t)i]; }
             case Kind::Int:    std::snprintf(buf, sizeof(buf), "%d", (int)std::lround(plain)); return buf;
             case Kind::Float:
-            default:           std::snprintf(buf, sizeof(buf), "%.*f", decimals, (double)plain); return buf;
+            default:
+            {
+                std::snprintf(buf, sizeof(buf), "%.*f", decimals, (double)plain);
+                if (buf[0] == '-') // turn "-0.0" into "0.0"
+                {
+                    bool allZero = true;
+                    for (const char* q = buf + 1; *q; ++q) if (*q != '0' && *q != '.') { allZero = false; break; }
+                    if (allZero) return std::string(buf + 1);
+                }
+                return buf;
+            }
         }
     }
 };
@@ -296,7 +307,11 @@ struct PluginInfo
 struct ProcessContext
 {
     const float* const* inputs = nullptr;   // inputs[channel][frame]; may be nullptr when numInputs == 0
-    float* const* outputs = nullptr;        // outputs[channel][frame]
+    float* const* outputs = nullptr;        // outputs[channel][frame]. Output channels that are not also
+                                            // inputs are cleared before process(). Inputs and outputs are
+                                            // USUALLY THE SAME BUFFERS (in-place): read the input sample(s)
+                                            // of a frame before writing that frame's output, and never read
+                                            // ahead into later input frames after writing earlier outputs.
     int numInputs = 0;
     int numOutputs = 0;
     int numFrames = 0;
@@ -415,7 +430,9 @@ public:
             uint8_t status = (uint8_t)me->midiData[0];
             e.data[0] = status; e.data[1] = (uint8_t)me->midiData[1]; e.data[2] = (uint8_t)me->midiData[2];
             uint8_t hi = status & 0xF0;
-            e.size = (hi == 0xC0 || hi == 0xD0) ? 2 : (status >= 0xF0 ? 1 : 3);
+            if (status >= 0xF0)      e.size = (status == 0xF2) ? 3 : ((status == 0xF1 || status == 0xF3) ? 2 : 1);
+            else if (hi == 0xC0 || hi == 0xD0) e.size = 2;
+            else                     e.size = 3;
         }
     }
 
@@ -442,8 +459,17 @@ public:
         ctx.sampleRate = sampleRate_;
         ctx.transport = fetchTransport();
 
+        // Clear output buffers that do not alias an input buffer. Hosts (including the MPC)
+        // usually process in place, passing the same buffers as inputs and outputs, so
+        // those must be left intact for process() to read.
         for (int c = 0; c < info_.numOutputs; ++c)
-            if (outputs[c] != nullptr) std::memset(outputs[c], 0, sizeof(float) * (size_t)numFrames);
+        {
+            if (outputs[c] == nullptr) continue;
+            bool aliasesInput = false;
+            for (int i = 0; i < info_.numInputs && inputs != nullptr; ++i)
+                if (inputs[i] == outputs[c]) { aliasesInput = true; break; }
+            if (!aliasesInput) std::memset(outputs[c], 0, sizeof(float) * (size_t)numFrames);
+        }
 
         numMidiOut_ = 0;
         process(ctx);
@@ -451,7 +477,9 @@ public:
         flushMidiOut();
     }
 
-    // State: "MPCP" | u32 version | u32 nParams | { u8 idLen, id, f32 plain }* | u32 extraLen | extra
+    // State: "MPCP" | u32 version(2) | u32 nParams | { u8 idLen, id, f32 plain, f32 normalised }* | u32 extraLen | extra
+    // Version 1 chunks (no normalised value) are still accepted. On load the normalised value is used when it
+    // agrees with the plain value (exact round trip); otherwise the plain value wins (the parameter range changed).
     const std::vector<uint8_t>& internalSaveState()
     {
         std::vector<uint8_t>& out = stateBuffer_;
@@ -459,7 +487,7 @@ public:
         auto putU32 = [&out](uint32_t v) { for (int i = 0; i < 4; ++i) out.push_back((uint8_t)(v >> (8 * i))); };
         auto putF32 = [&out](float f) { uint32_t v; std::memcpy(&v, &f, 4); for (int i = 0; i < 4; ++i) out.push_back((uint8_t)(v >> (8 * i))); };
         out.push_back('M'); out.push_back('P'); out.push_back('C'); out.push_back('P');
-        putU32(1);
+        putU32(2);
         putU32((uint32_t)params_.size());
         for (int i = 0; i < numParams(); ++i)
         {
@@ -467,6 +495,7 @@ public:
             out.push_back((uint8_t)clamp<size_t>(id.size(), 0, 255));
             for (size_t k = 0; k < id.size() && k < 255; ++k) out.push_back((uint8_t)id[k]);
             putF32(get(i));
+            putF32(getNormalised(i));
         }
         std::vector<uint8_t> extra;
         saveExtraState(extra);
@@ -489,8 +518,18 @@ public:
             if (pos + idLen + 4 > size) return false;
             std::string id(reinterpret_cast<const char*>(data + pos), idLen); pos += idLen;
             uint32_t bits; getU32(bits); float plain; std::memcpy(&plain, &bits, 4);
+            float norm = -1.0f;
+            if (version >= 2) { if (pos + 4 > size) return false; getU32(bits); std::memcpy(&norm, &bits, 4); }
             for (int i = 0; i < numParams(); ++i)
-                if (params_[(size_t)i].id == id) { set(i, plain); break; }
+            {
+                if (params_[(size_t)i].id != id) continue;
+                const Param& pr = params_[(size_t)i];
+                if (norm >= 0.0f && norm <= 1.0f && std::fabs(pr.toPlain(norm) - plain) <= 1e-4f * (1.0f + std::fabs(plain)))
+                    setNormalised(i, norm);
+                else
+                    set(i, plain);
+                break;
+            }
         }
         uint32_t extraLen = 0;
         if (getU32(extraLen) && pos + extraLen <= size && extraLen > 0) loadExtraState(data + pos, extraLen);

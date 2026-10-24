@@ -39,6 +39,7 @@ What the host sends, in order, when the user adds the plugin to a track:
 ## Processing
 
 - The host calls `processReplacing` with float buffers. The legacy accumulating `process` and the double-precision path are not used.
+- **Processing is in place**: the input and output pointers refer to the same memory. Read a frame's input samples before writing that frame's output, and never read later input frames after writing earlier outputs. The framework clears only output channels that are not also inputs; the host simulator fails a plugin whose output vanishes in place.
 - Before each block, instruments receive their MIDI events (`processEvents`), even when the list is empty.
 - Transport information (tempo, position in beats, bar start, time signature, playing/recording/looping, loop points) is available to the plugin on every block. The framework exposes it as `ctx.transport`.
 

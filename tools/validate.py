@@ -33,7 +33,7 @@ GLIBC_WARN_ABOVE = (2, 36)
 GLIBCXX_MAX = (3, 4, 32)
 UIVERSION_MAX = (0, 1, 0, 0)
 MAX_TABS = 32
-ILLEGAL_FILENAME_CHARS = '\\/:*?"<>|'
+ILLEGAL_FILENAME_CHARS = '"#@,;:<>*^|?\\/'  # the exact set the MPC strips when it builds the folder name
 REQUIRED_PLUGIN_KEYS = ("name", "manufacturer", "version", "kind", "uid", "numInputs", "numOutputs", "file32", "file64")
 
 EM_ARM, EM_AARCH64 = 40, 183
@@ -63,7 +63,7 @@ class Report:
 # Helpers
 # --------------------------------------------------------------------------------------------
 def legal_file_name(s):
-    return "".join(ch for ch in s if ch not in ILLEGAL_FILENAME_CHARS and ord(ch) >= 32)
+    return "".join(ch for ch in s if ch not in ILLEGAL_FILENAME_CHARS)
 
 
 def expected_folder_name(manufacturer, name):

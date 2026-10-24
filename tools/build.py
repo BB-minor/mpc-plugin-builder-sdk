@@ -44,7 +44,7 @@ DOCKER_IMAGE = "mpc-plugin-sdk-cross"
 IS_WINDOWS = os.name == "nt"
 IS_MAC = sys.platform == "darwin"
 
-ILLEGAL_FILENAME_CHARS = '\\/:*?"<>|'
+ILLEGAL_FILENAME_CHARS = '"#@,;:<>*^|?\\/'  # the exact set the MPC strips when it builds the folder name
 
 COMMON_FLAGS = [
     "-std=c++17", "-fPIC", "-shared",
@@ -136,7 +136,7 @@ def make_slug(name):
 
 
 def legal_filename(s):
-    return "".join(c for c in s if c not in ILLEGAL_FILENAME_CHARS and ord(c) >= 32)
+    return "".join(c for c in s if c not in ILLEGAL_FILENAME_CHARS)
 
 
 def output_folder_name(manifest):

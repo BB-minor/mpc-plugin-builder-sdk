@@ -18,7 +18,7 @@ import re
 import sys
 import zipfile
 
-ILLEGAL_FILENAME_CHARS = '\\/:*?"<>|'
+ILLEGAL_FILENAME_CHARS = '"#@,;:<>*^|?\\/'  # the exact set the MPC strips when it builds the folder name
 
 
 def make_slug(name):
@@ -26,7 +26,7 @@ def make_slug(name):
 
 
 def legal_filename(s):
-    return "".join(c for c in s if c not in ILLEGAL_FILENAME_CHARS and ord(c) >= 32)
+    return "".join(c for c in s if c not in ILLEGAL_FILENAME_CHARS)
 
 
 def output_folder_name(manifest):
