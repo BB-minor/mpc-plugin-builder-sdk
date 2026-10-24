@@ -1,0 +1,33 @@
+name: Build examples
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build and validate every example
+        shell: bash
+        run: |
+          set -e
+          for p in examples/*/; do
+            echo "=== $p"
+            python tools/build.py "$p"
+          done
+      - name: Package one example
+        shell: bash
+        run: python tools/package.py examples/StereoDelay
+      - uses: actions/upload-artifact@v4
+        with:
+          name: examples-${{ matrix.os }}
+          path: examples/*/dist/*.zip
