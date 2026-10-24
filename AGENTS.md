@@ -51,6 +51,7 @@ Never report a plugin as done without steps 3 and 4 passing.
 | What the MPC host does | `docs/host-contract.md` |
 | Writing DSP | `docs/dsp-cookbook.md`, `framework/mpc_plugin.h`, `framework/dsp/` |
 | Simple UI | `docs/ui-guide.md`, `schemas/ui.schema.json` |
+| Knob / fader / switch graphics | `ui-kit/README.md`, `ui-kit/preview.png`, `tools/make_ui_kit.py` |
 | Full UI format | `docs/ui-reference.md` |
 | Toolchains and flags | `docs/building.md` |
 | Testing and installing | `docs/install-and-test.md` |
@@ -64,4 +65,5 @@ Never report a plugin as done without steps 3 and 4 passing.
 - One `.cpp` per plugin unless it grows past ~800 lines; then split DSP into headers under `src/`.
 - Comment the signal flow at the top of the file and each parameter's purpose. The user will read it.
 - Short, unit-bearing parameter names and sensible defaults; a master volume parameter first; 3–8 built-in programs.
+- A `ui.json` that uses the UI kit: `knob`, `fader` and `switch` widgets (heuristics in the `mpc-plugin-ui` skill), not pages of generic sliders.
 - Keep the project README honest: what works, what is not implemented, CPU expectations.

@@ -971,7 +971,8 @@ Third of a four-way radio group (waveform `Square`):
 ```
 
 Binds to: one parameter handle (shared by all buttons of a group). Images are
-scaled to the entry's bounds.
+centred in the entry's bounds at their native size (the firmware does not scale
+them), so size the entry to the image.
 
 ### 6.5 Focus (well-trodden)
 

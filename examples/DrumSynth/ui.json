@@ -1,18 +1,19 @@
 {
+  "kit": "amber",
   "pages": [
     { "name": "KIT A",
       "controls": [
-        "Kick Tune",  "Kick Decay",  "Kick Level",  "Master",
-        "Snare Tune", "Snare Decay", "Snare Level", "Routing",
-        "Clap Tune",  "Clap Decay",  "Clap Level",  { "widget": "empty" },
-        "CHat Tune",  "CHat Decay",  "CHat Level"
+        { "param": "Kick Tune",  "widget": "knob" }, { "param": "Kick Decay",  "widget": "knob" }, { "param": "Kick Level",  "widget": "fader" }, { "param": "Master", "widget": "fader" },
+        { "param": "Snare Tune", "widget": "knob" }, { "param": "Snare Decay", "widget": "knob" }, { "param": "Snare Level", "widget": "fader" }, { "param": "Routing", "widget": "switch" },
+        { "param": "Clap Tune",  "widget": "knob" }, { "param": "Clap Decay",  "widget": "knob" }, { "param": "Clap Level",  "widget": "fader" }, "empty",
+        { "param": "CHat Tune",  "widget": "knob" }, { "param": "CHat Decay",  "widget": "knob" }, { "param": "CHat Level",  "widget": "fader" }
       ] },
     { "name": "KIT B",
       "controls": [
-        "OHat Tune", "OHat Decay", "OHat Level", "Master",
-        "LTom Tune", "LTom Decay", "LTom Level", "Routing",
-        "HTom Tune", "HTom Decay", "HTom Level", { "widget": "empty" },
-        "Perc Tune", "Perc Decay", "Perc Level"
+        { "param": "OHat Tune", "widget": "knob" }, { "param": "OHat Decay", "widget": "knob" }, { "param": "OHat Level", "widget": "fader" }, { "param": "Master", "widget": "fader" },
+        { "param": "LTom Tune", "widget": "knob" }, { "param": "LTom Decay", "widget": "knob" }, { "param": "LTom Level", "widget": "fader" }, { "param": "Routing", "widget": "switch" },
+        { "param": "HTom Tune", "widget": "knob" }, { "param": "HTom Decay", "widget": "knob" }, { "param": "HTom Level", "widget": "fader" }, "empty",
+        { "param": "Perc Tune", "widget": "knob" }, { "param": "Perc Decay", "widget": "knob" }, { "param": "Perc Level", "widget": "fader" }
       ] }
   ]
 }

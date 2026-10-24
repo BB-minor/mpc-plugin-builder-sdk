@@ -473,7 +473,7 @@ def check_skins(rep, skins_dir, nparams):
                         m = PARAM_HANDLE_RE.search(v)
                         if m and nparams is not None and int(m.group(1)) >= nparams:
                             bad.append((path, v))
-                        if path.endswith(("/filmStrip", "/image")) and v:
+                        if path.endswith(("/filmStrip", "/image", "/onImage", "/offImage")) and v:
                             images.add(v)
                 if bad:
                     for path, v in bad[:10]:

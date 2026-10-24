@@ -2,27 +2,51 @@
   "pages": [
     { "name": "OSC",
       "controls": [
-        "Osc1 Wave", "Osc1 Octave", "Osc1 Level", "Glide",
-        "Osc2 Wave", "Osc2 Octave", "Osc2 Semi", "Osc2 Detune",
-        "Osc2 Level", "Pulse Width", "Bend Range", "Volume"
+        { "param": "Osc1 Wave",   "widget": "switch" },
+        { "param": "Osc1 Octave", "widget": "knob" },
+        { "param": "Osc1 Level",  "widget": "fader" },
+        { "param": "Glide",       "widget": "knob" },
+        { "param": "Osc2 Wave",   "widget": "switch" },
+        { "param": "Osc2 Octave", "widget": "knob" },
+        { "param": "Osc2 Semi",   "widget": "knob" },
+        { "param": "Osc2 Detune", "widget": "knob" },
+        { "param": "Osc2 Level",  "widget": "fader" },
+        { "param": "Pulse Width", "widget": "knob" },
+        { "param": "Bend Range",  "widget": "knob" },
+        { "param": "Volume",      "widget": "fader" }
       ] },
     { "name": "FILTER",
       "controls": [
-        "Cutoff", "Resonance", "Filter Mode", "Drive",
-        "Env Amount", "Key Track", { "widget": "empty" }, { "widget": "empty" },
-        "Filt Attack", "Filt Decay", "Filt Sustain", "Filt Release"
+        { "param": "Cutoff",      "widget": "knob" },
+        { "param": "Resonance",   "widget": "knob" },
+        { "param": "Filter Mode", "widget": "switch" },
+        { "param": "Drive",       "widget": "knob" },
+        { "param": "Env Amount",  "widget": "knob", "polarity": "bipolar" },
+        { "param": "Key Track",   "widget": "knob" },
+        { "widget": "empty" }, { "widget": "empty" },
+        { "param": "Filt Attack",  "widget": "fader" },
+        { "param": "Filt Decay",   "widget": "fader" },
+        { "param": "Filt Sustain", "widget": "fader" },
+        { "param": "Filt Release", "widget": "fader" }
       ] },
     { "name": "AMP",
       "controls": [
-        "Amp Attack", "Amp Decay", "Amp Sustain", "Amp Release",
-        "Volume", "Velocity"
+        { "param": "Amp Attack",  "widget": "fader" },
+        { "param": "Amp Decay",   "widget": "fader" },
+        { "param": "Amp Sustain", "widget": "fader" },
+        { "param": "Amp Release", "widget": "fader" },
+        { "param": "Volume",      "widget": "fader" },
+        { "param": "Velocity",    "widget": "knob" }
       ] },
     { "name": "LFO",
       "controls": [
-        "LFO Shape", "LFO Sync",
-        { "param": "LFO Rate", "visibleWhen": { "param": "LFO Sync", "choice": "Off" } },
-        { "param": "LFO Div",  "visibleWhen": { "param": "LFO Sync", "choice": "On" } },
-        "LFO>Pitch", "LFO>Filter", "Wheel Vib"
+        { "param": "LFO Shape", "widget": "slider", "overlay": "menu" },
+        { "param": "LFO Sync",  "widget": "switch" },
+        { "param": "LFO Rate",  "widget": "knob", "visibleWhen": { "param": "LFO Sync", "choice": "Off" } },
+        { "param": "LFO Div",   "widget": "slider", "overlay": "menu", "visibleWhen": { "param": "LFO Sync", "choice": "On" } },
+        { "param": "LFO>Pitch",  "widget": "knob" },
+        { "param": "LFO>Filter", "widget": "knob" },
+        { "param": "Wheel Vib",  "widget": "knob" }
       ] }
   ]
 }

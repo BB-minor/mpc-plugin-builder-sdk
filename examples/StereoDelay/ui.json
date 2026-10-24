@@ -1,12 +1,16 @@
 {
+  "kit": "cyan",
   "pages": [
     { "name": "DELAY",
       "controls": [
-        "Sync",
-        { "param": "Division", "visibleWhen": { "param": "Sync", "choice": "On" } },
-        { "param": "Time",     "visibleWhen": { "param": "Sync", "choice": "Off" } },
-        "Feedback",
-        "Low Cut", "High Cut", "Ping Pong", "Mix"
+        { "param": "Sync", "widget": "switch" },
+        { "param": "Division", "widget": "slider", "overlay": "menu", "visibleWhen": { "param": "Sync", "choice": "On" } },
+        { "param": "Time", "widget": "knob", "visibleWhen": { "param": "Sync", "choice": "Off" } },
+        { "param": "Feedback", "widget": "knob" },
+        { "param": "Low Cut", "widget": "knob" },
+        { "param": "High Cut", "widget": "knob" },
+        { "param": "Ping Pong", "widget": "switch" },
+        { "param": "Mix", "widget": "fader" }
       ] }
   ]
 }

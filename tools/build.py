@@ -571,7 +571,7 @@ def make_skins(project, out_dir, params_json, no_ui):
              "(the MPC shows its generic parameter UI)")
     else:
         ui_json = os.path.join(project, "ui.json")
-        argv = ["--params", params_json, "--out", skins_out]
+        argv = ["--params", params_json, "--out", skins_out, "--kit-cache", os.path.join(project, "build")]
         if os.path.isfile(ui_json):
             argv += ["--ui", ui_json]
             log("  gen_ui.py (ui.json) -> Plugin Skins/")
@@ -586,8 +586,10 @@ def make_skins(project, out_dir, params_json, no_ui):
             warn("gen_ui.py failed (%s); no Plugin Skins generated (the MPC shows its generic parameter UI)" % status)
             if os.path.isdir(skins_out):
                 shutil.rmtree(skins_out)
-        elif VERBOSE and out.strip():
-            log(out.rstrip())
+        elif out.strip():
+            for line in out.rstrip().splitlines():
+                if VERBOSE or "NOTE" in line or "WARNING" in line:
+                    log("  " + line)
 
     assets_src = os.path.join(project, "assets")
     if os.path.isdir(assets_src):

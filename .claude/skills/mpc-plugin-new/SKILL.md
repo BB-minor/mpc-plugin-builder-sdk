@@ -35,7 +35,7 @@ Rules that are not negotiable:
 - Keep CPU modest: the MPC is far slower than a laptop. Per-block coefficient updates, per-sample arithmetic only.
 - Parameter `id` strings and the `uid` are permanent once users have projects.
 
-Then edit `ui.json` (see the `mpc-plugin-ui` skill) and `README.md` (what it does, the parameter list, tips).
+Then edit `ui.json` using the `mpc-plugin-ui` skill: give every control a kit widget (`knob`, `fader` or `switch`, see its heuristics) instead of the generic slider, and pick one theme. Then write `README.md` (what it does, the parameter list, tips).
 
 ## 4. Build, test, iterate
 
