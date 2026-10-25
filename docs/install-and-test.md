@@ -28,6 +28,19 @@ The `test` command fails on NaN/infinite output, crashes, and state that does no
 
 Replacing a plugin: copy the new folder over the old one, then remove and re-add the plugin on the track (or restart the MPC if the skins changed).
 
+### Or install over the network
+
+If the MPC is on the same network as your computer, `tools/mpc_remote.py` copies the plugin for you and can also list, update, remove and export plugins on the device:
+
+```
+python3 tools/mpc_remote.py 192.168.1.50                 # interactive menu
+python3 tools/mpc_remote.py 192.168.1.50 add plugins/MyPlugin
+python3 tools/mpc_remote.py 192.168.1.50 add some-plugin.zip
+python3 tools/mpc_remote.py 192.168.1.50 export --all --out ~/mpc-backup
+```
+
+It needs the setup from step 4 above (MPC OS 3.10.1+, Enable Enhancements, VST2 Support) plus **developer mode**, which starts the MPC's SSH server: Preferences → Info, tap the version value 3 times, the serial number value 2 times, the firmware version once. Run `python3 tools/mpc_remote.py <ip> doctor` if it will not connect; it explains what is missing. It only writes inside the `VST2 Plugins` folder of the drive you choose. Switch developer mode off again when you are done on a network you do not control. With Claude Code or Codex, just ask: "install this on my MPC at 192.168.1.50".
+
 ## 3. Check the UI
 
 - With no `Plugin Skins`, the MPC shows pages of 16 sliders, one per parameter, with the hardware knobs mapped in order.

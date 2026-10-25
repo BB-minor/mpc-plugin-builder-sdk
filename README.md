@@ -48,7 +48,7 @@ Paste one of these into your agent with the SDK folder open:
 | Folder | Contents |
 |---|---|
 | `framework/` | `mpc_plugin.h`: header-only plugin framework (parameters, MIDI, transport, state, programs). `mpc_vst2_abi.h`: clean-room description of the VST 2.4 binary interface. `dsp/`: oscillators, filters, envelopes, delay lines, LFOs, voice allocation, smoothing, tempo helpers. |
-| `tools/` | `build.py` (one-command cross-compile for both MPC CPU families + native), `host-sim/` (a command-line host that behaves like the MPC for testing on your computer), `validate.py`, `gen_ui.py`, `package.py`, `new_plugin.py`, `make_ui_kit.py` (film-strip knobs, faders, switches), `make_knob.py`, `docker/`. |
+| `tools/` | `build.py` (one-command cross-compile for both MPC CPU families + native), `host-sim/` (a command-line host that behaves like the MPC for testing on your computer), `validate.py`, `gen_ui.py`, `package.py`, `mpc_remote.py` (install and manage plugins on an MPC over the network), `new_plugin.py`, `make_ui_kit.py` (film-strip knobs, faders, switches), `make_knob.py`, `docker/`. |
 | `examples/` | `SimpleSynth` (8-voice subtractive synth with presets), `StereoDelay` (tempo-synced effect), `DrumSynth` (multi-output drum instrument). Complete projects you can build and copy. |
 | `templates/` | Minimal instrument and effect projects used by `new_plugin.py`. |
 | `docs/` | The specifications: plugin folder and `plugin.json`, the host contract, the scripted UI JSON system (`ui-reference.md`), building, testing, presets, troubleshooting, FAQ and legal notes. |

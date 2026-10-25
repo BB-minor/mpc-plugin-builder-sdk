@@ -18,6 +18,7 @@ Use the skills in `.claude/skills/` (Claude Code) or `.agents/skills/` (Codex); 
 | `mpc-plugin-build` | Compile for native + arm32 + arm64, fix build/validation errors |
 | `mpc-plugin-test` | Run the host simulator, interpret the report, render WAVs |
 | `mpc-plugin-package` | Zip with install instructions for sharing |
+| `mpc-plugin-deploy` | Install/list/update/remove/export plugins on an MPC over the network (`tools/mpc_remote.py`), and set the MPC up for it |
 | `mpc-plugin-presets` | Built-in programs |
 | `mpc-plugin-troubleshoot` | Problems on the MPC or with the tools |
 
@@ -28,7 +29,7 @@ Use the skills in `.claude/skills/` (Claude Code) or `.agents/skills/` (Codex); 
 2. Write `src/<Class>.cpp` against `framework/mpc_plugin.h` using `framework/dsp/*.h`; write `ui.json`; write `README.md`.
 3. `python tools/build.py plugins/<Name>` until it is clean.
 4. `.sdk-tools/host_sim plugins/<Name>/build/native/<slug>.<dylib|so|dll> test --wav plugins/<Name>/build/test.wav` until no FAIL and the WARNs are understood.
-5. Tell the user where the output folder is and how to install it; offer `python tools/package.py plugins/<Name>`.
+5. Tell the user where the output folder is and how to install it; offer `python tools/package.py plugins/<Name>`, and, if their MPC is on the same network, offer to install it for them with the `mpc-plugin-deploy` skill.
 
 Never report a plugin as done without steps 3 and 4 passing.
 
@@ -44,7 +45,7 @@ Commands here say `python`; on macOS and some Linux systems only `python3` exist
 - **Parameter 0 is nudged by the host on every load.** Make it harmless (master volume) with no side effects.
 - **CPU**: the MPC is a slow ARM device. Aim for a few percent of one core per instance; no per-sample transcendental functions in inner loops.
 - **Nothing proprietary**: do not fetch, copy or depend on files from MPC firmware, Steinberg's VST SDK, or code with licences incompatible with the user's intent. Note the licence of any DSP you borrow in the project README.
-- **No system modification**: never suggest rooting, SSH, firmware patches or editing MPC system files. The official route is the `VST2 Plugins` folder and the preference switch.
+- **No system modification**: never suggest rooting, firmware patches or editing MPC system files. The official route is the `VST2 Plugins` folder and the preference switch. The one remote route is `tools/mpc_remote.py` (skill `mpc-plugin-deploy`), which uses the MPC's official developer mode and only ever writes inside a drive's `VST2 Plugins` folder. Do not run other commands on the device over SSH, and do not hand-write SSH/scp commands to copy plugins.
 
 ## Where to read
 
