@@ -14,7 +14,7 @@ Check these with the user before connecting (the script also diagnoses them, but
 1. MPC OS **3.10.1 or later** (Preferences → Info).
 2. **Preferences → Enhancements (Beta)**: turn on **Enable Enhancements**, then **VST2 Support**. Read the warning with them.
 3. **Developer mode** on: Preferences → Info; tap the version value 3 times, the serial number value 2 times, then the firmware version once. This starts the MPC's SSH server. (If it does not seem to work, ask the user to describe what the Info page shows.)
-4. The MPC and the computer on the same network. The MPC's IP address is under Preferences → Network.
+4. The MPC and the computer on the same network. The MPC's IP address is in Preferences, on the Wi-Fi tab (hold Shift to access it) or on the Ethernet tab, depending on how it is connected.
 
 Developer mode is an official, supported switch, but it opens a login on the device: tell the user to switch it off again when finished on a network they do not control. This skill only ever writes inside the `VST2 Plugins` folder of the chosen drive. Never use it, or any SSH access, to change system files, firmware or settings.
 
@@ -59,7 +59,7 @@ Read the panel the script prints; it names the cause:
 
 | Panel | Meaning | What to do |
 |---|---|---|
-| "can't reach" | Timeout: wrong address, different network, client isolation | Check Preferences → Network, same Wi-Fi, try Ethernet |
+| "can't reach" | Timeout: wrong address, different network, client isolation | Check the IP in Preferences (Wi-Fi tab, hold Shift; or Ethernet tab), same Wi-Fi, try Ethernet |
 | "SSH server is off" | Connection refused: developer mode is not on | Do steps 1-3 above, then run again |
 | "Login refused" | SSH is up but wants a password or another user | Ask the user for it; `--password`/`MPC_SSH_PASSWORD`, `--user` |
 | "No drives found" | Nothing mounted under /media | Insert a USB drive / SD card, check the internal storage |

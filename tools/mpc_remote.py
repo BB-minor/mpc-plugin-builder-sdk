@@ -385,7 +385,7 @@ def setup_steps():
         "     then the serial number value 2 times, then the firmware version once.",
         "     Developer mode starts the MPC's SSH server.",
         S.bold("4. Join the network:") + " the MPC and this computer must be on the same Wi-Fi / Ethernet.",
-        "     Find the MPC's IP address in Preferences → Network (or your router's device list).",
+        "     Find the MPC's IP address in Preferences: the Wi-Fi tab (hold Shift to reach it) or the Ethernet tab (or your router's device list).",
     ]
 
 
@@ -413,7 +413,7 @@ def explain(err, host, port, has_password):
             "Nothing answered at that address (timed out).",
             "",
             "• Is the MPC switched on and on the same network as this computer?",
-            "• Is the IP address right? Check Preferences → Network on the MPC.",
+            "• Is the IP address right? Check Preferences on the MPC: Wi-Fi tab (hold Shift) or Ethernet tab.",
             "• Guest Wi-Fi and some routers stop devices talking to each other (client isolation).",
         ])
     elif k == "refused":
