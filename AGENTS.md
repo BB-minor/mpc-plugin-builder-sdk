@@ -4,7 +4,7 @@ You are working inside the **MPC Plugin SDK**: a toolkit for building instrument
 
 ## What a finished plugin is
 
-A folder `"<Manufacturer> - VST - <Name>/"` containing `plugin.json`, `version.xml`, `VST/<slug>-arm32.so`, `VST/<slug>-arm64.so` and `Plugin Skins/` (touch UI). `tools/build.py` produces it from a project in `plugins/<Name>/` (`plugin.json`, `src/*.cpp`, `ui.json`, `README.md`). Users copy the folder into a `VST2 Plugins` folder on a drive. The MPC must run MPC OS 3.10.1 or later, and VST plugins must be enabled on the device (Preferences → Enhancements (Beta) → Enable Enhancements and VST2 Support). Always tell the user both of these when handing over a plugin.
+A folder `"<Manufacturer> - VST - <Name>/"` containing `plugin.json`, `version.xml`, `VST/<slug>-arm32.so`, `VST/<slug>-arm64.so` and `Plugin Skins/` (touch UI). `tools/build.py` produces it from a project in `plugins/<Name>/` (`plugin.json`, `src/*.cpp`, `ui.json`, `README.md`, optional `Content/`). Samples, wavetables, impulse responses and other files the plugin needs at run time go in the project's `Content/` folder, which is copied to `Content/` beside `Plugin Skins/`; the code finds it with `mpc::contentPath("...")` from `framework/mpc_resources.h` (see `docs/plugin-folder-format.md`). Users copy the folder into a `VST2 Plugins` folder on a drive. The MPC must run MPC OS 3.10.1 or later, and VST plugins must be enabled on the device (Preferences → Enhancements (Beta) → Enable Enhancements and VST2 Support). Always tell the user both of these when handing over a plugin.
 
 ## Skills
 
@@ -37,7 +37,7 @@ Commands here say `python`; on macOS and some Linux systems only `python3` exist
 
 ## Hard rules
 
-- **Realtime**: no allocation, locks, logging or I/O in `process()`. Block size is a maximum; frames per call vary (32–512). Clamp inputs to filters and divisions.
+- **Realtime**: no allocation, locks, logging or I/O in `process()`. Load files from `Content/` in the constructor or `prepare()` only; never hard-code absolute paths. Block size is a maximum; frames per call vary (32–512). Clamp inputs to filters and divisions.
 - **Identity is permanent**: `uid` (plugin.json and `MPC_FOURCC` in code must match), parameter `id` strings, and parameter order must not change once a user has projects. Append new parameters at the end.
 - **Ask for the manufacturer name** when the prompt does not contain one, and show the proposed plugin name for confirmation. Do not invent a generic default.
 - **Names must agree**: `plugin.json` `name`/`manufacturer` == `PluginInfo` `name`/`vendor` == folder name parts. The UI is found by those strings.
@@ -55,6 +55,7 @@ Commands here say `python`; on macOS and some Linux systems only `python3` exist
 | Folder, plugin.json, version.xml | `docs/plugin-folder-format.md` |
 | What the MPC host does | `docs/host-contract.md` |
 | Writing DSP | `docs/dsp-cookbook.md`, `framework/mpc_plugin.h`, `framework/dsp/` |
+| Samples, wavetables, any file in the plugin folder | `framework/mpc_resources.h`, `framework/dsp/wav.h`, cookbook §11b, `docs/plugin-folder-format.md` |
 | Simple UI | `docs/ui-guide.md`, `schemas/ui.schema.json` |
 | Knob / fader / switch graphics | `ui-kit/README.md`, `ui-kit/preview.png`, `tools/make_ui_kit.py` |
 | Full UI format | `docs/ui-reference.md` |

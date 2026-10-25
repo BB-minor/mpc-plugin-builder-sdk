@@ -13,6 +13,7 @@ Every plugin is one folder, named after the manufacturer and plugin name:
 ├── VST/
 │   ├── <slug>-arm32.so      32-bit ARM build (MPC X, Live, Live II, One, One+, Key 61, Key 37, Force)
 │   └── <slug>-arm64.so      64-bit ARM build (MPC Live III, MPC XL and later 64-bit products)
+├── Content/                 optional: your own files (samples, wavetables, impulse responses, presets data)
 └── Plugin Skins/            optional: the touch-screen UI and knob mapping
     ├── TUI.json
     ├── Q-Links.json
@@ -25,7 +26,22 @@ Rules:
 - When the MPC builds the name it removes these characters: `" # @ , ; : < > * ^ | ? \ /`. Use the same rule when you name the folder (the SDK tools do). Spaces and UTF-8 are fine. Keep the whole name under 128 characters.
 - If `manufacturer` is empty the folder is named `"VST - <name>"`. Always set a manufacturer.
 - The binaries can live anywhere inside the folder (the `VST/` subfolder is a convention); `plugin.json` gives their paths. They cannot be outside the folder.
-- Keep the folder self-contained. Anything the plugin needs at run time (wavetables, impulse responses) goes inside it.
+- Keep the folder self-contained. Anything the plugin needs at run time (samples, wavetables, impulse responses) goes inside it, in a `Content/` folder beside `Plugin Skins/`. The MPC does not look inside `Content/`; it is purely for your plugin's code.
+
+## Content: loading your own files at run time
+
+The plugin project keeps these files in `plugins/<Name>/Content/` (any subfolders); `tools/build.py` copies it verbatim to `Content/` in the output folder, and `package.py` / `mpc_remote.py` ship it with the plugin.
+
+The VST2 host gives a plugin no path to its own folder, so the SDK provides one: `framework/mpc_resources.h` (included by `mpc_plugin.h`). The library asks the OS where its code was loaded from (`/proc/self/maps` on the MPC) and walks up to the folder holding `plugin.json`.
+
+```cpp
+std::string dir  = mpc::pluginFolder();               // ".../<Manufacturer> - VST - <Name>"
+std::string path = mpc::contentPath("Samples/kick.wav");   // ".../Content/Samples/kick.wav"
+std::vector<uint8_t> bytes;  mpc::readFile(path, bytes);   // raw file
+dsp::WavData wav;  dsp::loadWav(path, wav);                // framework/dsp/wav.h: PCM 8/16/24/32 or float WAV -> float
+```
+
+Rules: load in the constructor or `prepare()` (never `process()`: no file I/O or allocation there), keep the data in members, always handle a missing file (fall back to a generated sound), and use `/` in paths. Under `host_sim` the native test library is found inside the project (`plugins/<Name>/build/native/` is inside the project folder that holds `plugin.json`), so `Content/` is read straight from the project; set the environment variable `MPC_PLUGIN_FOLDER` to point at any other folder. Mind memory: the MPC has limited RAM and every instance loads its own copy, so keep samples short or mono/16-bit, and do not load a large library per instance if a few MB will do.
 
 ## Where the folder goes on the MPC
 

@@ -12,7 +12,7 @@ This:
 
 1. Compiles a **native** build for your own computer (`build/native/`) and runs the host simulator against it to extract the parameter list (`build/params.json`).
 2. Cross-compiles **arm32** and **arm64** builds into the output folder `build/<Manufacturer> - VST - <Name>/VST/`.
-3. Copies `plugin.json`, generates (or copies) the `Plugin Skins`, writes `version.xml`.
+3. Copies `plugin.json`, generates (or copies) the `Plugin Skins`, copies the project's `Content/` folder (samples, wavetables, ...) if there is one, writes `version.xml`.
 4. Runs the validator.
 
 Options: `--target native|arm32|arm64|all`, `--debug`, `--no-ui`, `--no-validate`, `--toolchain zig|gcc|docker`, `--define NAME=VALUE`, `--verbose`.

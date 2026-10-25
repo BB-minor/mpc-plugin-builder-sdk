@@ -634,6 +634,15 @@ def validate(target, params_path=None, strict=False):
         rep.ok("no Plugin Skins folder (the MPC will show its generic parameter UI)")
     check_version_xml(rep, folder, has_skins)
 
+    content = os.path.join(folder, "Content")
+    if os.path.isdir(content):
+        files = [os.path.join(r, f) for r, _d, fs in os.walk(content) for f in fs]
+        total = sum(os.path.getsize(f) for f in files)
+        rep.ok("Content/: %d file%s, %.1f MB (loaded by the plugin at run time, see framework/mpc_resources.h)"
+               % (len(files), "" if len(files) == 1 else "s", total / 1048576.0))
+        if total > 256 * 1048576:
+            rep.warn("Content/ is over 256 MB; large sample sets load slowly and use the MPC's limited RAM")
+
     print("%d error%s, %d warning%s" % (rep.errors, "" if rep.errors == 1 else "s", rep.warnings, "" if rep.warnings == 1 else "s"))
     if rep.errors or (strict and rep.warnings):
         return 1

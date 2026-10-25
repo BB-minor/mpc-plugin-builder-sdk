@@ -12,7 +12,7 @@ python tools/package.py plugins/<Name>
 ```
 
 Produces `plugins/<Name>/dist/<slug>-<version>-mpc.zip` containing:
-- `<Manufacturer> - VST - <Name>/` the complete plugin folder (both ARM builds, plugin.json, version.xml, Plugin Skins)
+- `<Manufacturer> - VST - <Name>/` the complete plugin folder (both ARM builds, plugin.json, version.xml, Plugin Skins, Content)
 - `INSTALL.txt` step-by-step install instructions for non-technical users (requires MPC OS 3.10.1 or later; copy to `VST2 Plugins` on a drive; enable VST plugins on the device via Preferences → Enhancements (Beta) → Enable Enhancements + VST2 Support; find it under External VST Plugins; warnings; how to uninstall)
 - the project's `README.md` if present
 

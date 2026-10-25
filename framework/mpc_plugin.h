@@ -22,6 +22,7 @@
 #define MPC_PLUGIN_H
 
 #include "mpc_vst2_abi.h"
+#include "mpc_resources.h"
 
 #include <atomic>
 #include <cstdarg>

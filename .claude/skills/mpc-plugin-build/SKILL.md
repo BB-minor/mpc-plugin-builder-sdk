@@ -13,7 +13,7 @@ python tools/build.py plugins/<Name> --debug    # -O0 -g for the native build wh
 
 The first run may install the Zig cross compiler into `.sdk-tools/` (one-time download). `--toolchain gcc` uses installed `arm-linux-gnueabihf-g++` / `aarch64-linux-gnu-g++`; `--toolchain docker` uses `tools/docker/Dockerfile`.
 
-Output: `plugins/<Name>/build/<Manufacturer> - VST - <Name>/` with `plugin.json`, `version.xml`, `VST/<slug>-arm32.so`, `VST/<slug>-arm64.so`, `Plugin Skins/`.
+Output: `plugins/<Name>/build/<Manufacturer> - VST - <Name>/` with `plugin.json`, `version.xml`, `VST/<slug>-arm32.so`, `VST/<slug>-arm64.so`, `Plugin Skins/`, and `Content/` (verbatim copy of the project's `Content/`, if it has one).
 
 ## Fixing failures
 

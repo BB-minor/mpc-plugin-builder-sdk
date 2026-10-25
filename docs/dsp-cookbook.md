@@ -283,6 +283,35 @@ float ms = getInt(kSync) ? beatsToSeconds(divisionBeats(getInt(kDiv)), ctx.trans
 | Different sound at 32-frame blocks | per-block logic assumed 128 frames (e.g. LFO stepped per block) | compute per sample or per fixed sub-chunk |
 | Works native, crashes on ARM32 | unaligned access, `double` assumed fast, large stack arrays | keep buffers in members, use `float`, stack arrays < 16 kB |
 
+## 11b. Loading samples, wavetables and other files
+
+Put them in `plugins/<Name>/Content/` (subfolders are fine). `build.py` copies them to
+`Content/` beside `Plugin Skins/` in the plugin folder. Find them at run time with
+`framework/mpc_resources.h` (already included by `mpc_plugin.h`):
+
+```cpp
+#include "dsp/wav.h"
+class MyPlugin : public mpc::Plugin {
+    dsp::WavData kick_;
+    bool haveKick_ = false;
+    void prepare(double sr, int) override {
+        if (!haveKick_) haveKick_ = dsp::loadWav(mpc::contentPath("Samples/kick.wav"), kick_);  // OK here, never in process()
+        // playback step per output sample = kick_.sampleRate / sr
+    }
+    ...
+};
+```
+
+`mpc::pluginFolder()`, `mpc::contentFolder()`, `mpc::contentPath(rel)`, `mpc::readFile`,
+`mpc::readTextFile`, `dsp::loadWav` / `dsp::parseWav`. Always have a fallback when the file is missing
+(generate a waveform) so the plugin still makes sound. Never hard-code absolute paths; the folder
+lives on whatever drive the user chose. Keep memory modest (the MPC has little RAM and each
+instance loads its own copy); convert audio to mono / 16-bit / 44.1 kHz in the Content folder when
+quality allows. For formats other than WAV, read the bytes with `mpc::readFile` and parse yourself;
+only use data you may redistribute and note its licence in the README.
+
+---
+
 ## 12. Checklist before building
 
 - [ ] `uid` in `plugin.json` equals the `MPC_FOURCC` in the source.
