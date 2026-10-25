@@ -19,6 +19,8 @@ python tools/build.py examples/StereoDelay
 
 You should see a native build, two ARM builds, generated skins and a validator report ending in OK. The output is `examples/StereoDelay/build/MPC SDK Examples - VST - Stereo Delay/`.
 
+> Note: the docs write `python`. On macOS (and some Linux systems) the command is `python3`; use that if `python` is not found. If you work through an AI agent it handles this for you.
+
 ## 3. Try an example on the MPC
 
 1. Copy that folder into a folder called `VST2 Plugins` at the root of your USB stick or SD card (create it if it is not there).

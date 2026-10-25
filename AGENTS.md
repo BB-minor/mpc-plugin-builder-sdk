@@ -32,6 +32,8 @@ Use the skills in `.claude/skills/` (Claude Code) or `.agents/skills/` (Codex); 
 
 Never report a plugin as done without steps 3 and 4 passing.
 
+Commands here say `python`; on macOS and some Linux systems only `python3` exists, so use that if `python` is not found.
+
 ## Hard rules
 
 - **Realtime**: no allocation, locks, logging or I/O in `process()`. Block size is a maximum; frames per call vary (32–512). Clamp inputs to filters and divisions.
