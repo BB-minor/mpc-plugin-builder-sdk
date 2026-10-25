@@ -169,7 +169,7 @@ def main(argv=None):
     mr.S = S_ = mr.Style(color)
     globals()["S"] = S_
 
-    mr.banner()
+    mr.banner("Manage your MPC firmware")
     host, image = args.address, args.image
     if not host:
         if not interactive():

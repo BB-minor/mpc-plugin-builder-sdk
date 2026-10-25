@@ -132,7 +132,7 @@ def say(text=""):
     print(text)
 
 
-def banner():
+def banner(subtitle="install and manage VST2 plugins on your MPC over the network"):
     art = [
         "┏┳┓┏━┓┏━╸  ┏━┓┏━╸┏┳┓┏━┓╺┳╸┏━╸",
         "┃┃┃┣━┛┃    ┣┳┛┣╸ ┃┃┃┃ ┃ ┃ ┣╸ ",
@@ -150,7 +150,7 @@ def banner():
             say("  " + out)
     if not S.unicode:
         say("  " + S.bold("MPC REMOTE"))
-    say("  " + S.dim("install and manage VST2 plugins on your MPC over the network"))
+    say("  " + S.dim(subtitle))
     say()
 
 
