@@ -29,6 +29,7 @@ Developer mode is an official, supported switch, but it opens a login on the dev
 python3 tools/mpc_remote.py <ip>                         # interactive menu (needs a real terminal)
 python3 tools/mpc_remote.py <ip> info                    # model, serial number, firmware version, CPU, drives
 python3 tools/mpc_remote.py <ip> doctor                  # setup diagnostics
+python3 tools/mpc_remote.py <ip> restart --yes           # restart the MPC app so it rescans VSTs
 python3 tools/mpc_remote.py <ip> list                    [--drive N]
 python3 tools/mpc_remote.py <ip> add plugins/<Name>      # an SDK project (its build/ output) ...
 python3 tools/mpc_remote.py <ip> add some-plugin.zip     # ... or a zip from the package tool / a download
@@ -46,7 +47,11 @@ Add `--no-color` when output is captured. Exit codes: 0 ok, 1 an operation faile
 1. Make sure the plugin is built and tested (`mpc-plugin-build`, `mpc-plugin-test`): `plugins/<Name>/build/` must hold the `"<Manufacturer> - VST - <Name>"` folder. Never deploy something that has not passed the build and `host_sim` checks.
 2. Run `info` (or `doctor`) to confirm the connection and pick the drive.
 3. `add plugins/<Name> --drive <d>` (first time) or `update plugins/<Name> --drive <d>` (new build). The tool checks that the ARM build matching the MPC's processor is present, copies via a hidden staging folder, verifies every file size, and keeps the previous version until the new one has arrived intact.
-4. Tell the user what to do on the MPC: the plugin is under **External VST Plugins** in the plugin browser; remove and re-add it on a track that already uses it (or restart the MPC if the skins changed). New or changed plugins may need the MPC to rescan; if it does not show, run `doctor` and re-check the Enhancements switches.
+4. Tell the user what to do on the MPC: the plugin is under **External VST Plugins** in the plugin browser; remove and re-add it on a track that already uses it (or restart the MPC if the skins changed). If a new or changed plugin does not show, offer the `restart` command (after warning about unsaved data), then `doctor` and the Enhancements switches.
+
+## Restarting the MPC app
+
+`restart` restarts the MPC application service (`acvs`) so it rescans VST2 plugins; it needs no drive. **Any unsaved project data on the MPC is lost**, so never run it (or pass `--yes`) without the user explicitly agreeing, and remind them to save first. Only suggest it when a newly added plugin does not show up; it is not needed for every install.
 
 ## When it will not connect
 
@@ -64,4 +69,4 @@ Remember `doctor` cannot read the Enhancements / VST2 Support switches remotely;
 
 ## What the tool does not do
 
-It does not build, rename or edit plugins, and never installs outside `VST2 Plugins`. It cannot restart the MPC or rescan plugins for the user. Pass-through of unknown commands to the device is not offered on purpose.
+It does not build, rename or edit plugins, and never installs outside `VST2 Plugins`. Apart from the app restart above, it does not run anything else on the device. Pass-through of unknown commands to the device is not offered on purpose.

@@ -15,6 +15,7 @@ The MPC's address can also be given as --address ADDRESS (or the MPC_ADDRESS env
     mpc_remote.py 192.168.1.50 remove "Acme - VST - Wobble"
     mpc_remote.py 192.168.1.50 export --all --out ~/Backups        always written as zip files
     mpc_remote.py 192.168.1.50 doctor                check the MPC is set up correctly
+    mpc_remote.py 192.168.1.50 restart               restart the MPC app to rescan VSTs (unsaved data is lost)
 
 Options:
     --password PW   SSH password if the MPC needs one (or set MPC_SSH_PASSWORD; avoids showing it in `ps`)
@@ -65,9 +66,10 @@ CPU_PARTS = {  # ARM "CPU part" ids as shown in /proc/cpuinfo
 }
 JUNK_NAMES = {".DS_Store", "Thumbs.db", "desktop.ini"}
 MAX_ZIP_BYTES = 1 << 30
+MPC_SERVICE = "acvs"  # the systemd unit that runs the MPC application
 
 EXIT_OK, EXIT_FAIL, EXIT_SETUP = 0, 1, 2
-COMMANDS = ("info", "drives", "list", "doctor", "add", "update", "remove", "export")
+COMMANDS = ("info", "drives", "list", "doctor", "restart", "add", "update", "remove", "export")
 
 # ----------------------------------------------------------------------------------------------
 # Terminal styling
@@ -345,7 +347,7 @@ def confirm(prompt, default=False, assume_yes=False):
     return val.startswith("y")
 
 
-def choose(title, items, allow_back=False):
+def choose(title, items, allow_back=False, back_label="back"):
     """items: list of (label, detail), shown in a box. Returns the chosen index or None for back."""
     rows = []
     numw = len(str(len(items)))
@@ -354,7 +356,7 @@ def choose(title, items, allow_back=False):
         rows.append("%s  %s%s" % (S.accent(str(i).rjust(numw)), pad(label, labelw) if detail else label,
                                   ("  " + S.dim(detail)) if detail else ""))
     if allow_back:
-        rows.append("%s  %s" % (S.accent("0".rjust(numw)), S.dim("back")))
+        rows.append("%s  %s" % (S.accent("0".rjust(numw)), S.dim(back_label)))
     panel(title, rows)
     while True:
         val = ask("Choose a number")
@@ -969,7 +971,9 @@ def scan_for_plugins(root):
     """Find plugin folders in an unzipped tree or a project directory."""
     root = os.path.abspath(root)
     if read_manifest(root):
-        return [root]
+        # An SDK project also has a plugin.json at its root; the deployable folder is under build/.
+        built = [] if os.path.isdir(os.path.join(root, "VST")) else built_folders(os.path.join(root, "build"))
+        return built or [root]
     found = []
     build = os.path.join(root, "build")
     for base in ([build] if os.path.isdir(build) else []) + [root]:
@@ -984,6 +988,89 @@ def scan_for_plugins(root):
         if found:
             break
     return found
+
+
+def built_folders(directory):
+    """Child folders of `directory` that are complete plugin folders (plugin.json plus a VST/ folder)."""
+    try:
+        names = sorted(os.listdir(directory))
+    except OSError:
+        return []
+    return [os.path.join(directory, n) for n in names
+            if os.path.isdir(os.path.join(directory, n, "VST")) and read_manifest(os.path.join(directory, n))]
+
+
+def plugin_zip_manifest(path):
+    """The plugin.json inside a zip (at the top or one folder down), or None if it is not a plugin zip."""
+    try:
+        with zipfile.ZipFile(path) as z:
+            for name in z.namelist():
+                parts = name.split("/")
+                if parts[-1] == "plugin.json" and len(parts) <= 2 and "__MACOSX" not in parts:
+                    data = json.loads(z.read(name).decode("utf-8"))
+                    return data if isinstance(data, dict) and data.get("name") else None
+    except (OSError, ValueError, zipfile.BadZipFile, KeyError):
+        pass
+    return None
+
+
+def zips_in(directory):
+    try:
+        names = sorted(os.listdir(directory))
+    except OSError:
+        return []
+    return [os.path.join(directory, n) for n in names
+            if n.lower().endswith(".zip") and os.path.isfile(os.path.join(directory, n))]
+
+
+class Candidate:
+    def __init__(self, path, kind, manifest):
+        self.path = path
+        self.kind = kind  # "folder" | "zip"
+        self.manifest = manifest
+        self.mtime = os.path.getmtime(path)
+
+    def label(self):
+        m = self.manifest
+        return "%s%s" % (m.get("name", os.path.basename(self.path)), (" " + str(m["version"])) if m.get("version") else "")
+
+    def detail(self, base):
+        shown_path = os.path.dirname(self.path) + os.sep if self.kind == "folder" else self.path  # the folder name repeats the plugin name
+        rel = os.path.relpath(shown_path, base) + (os.sep if self.kind == "folder" else "")
+        shown = shown_path if rel.startswith("..") else rel
+        age = time.time() - self.mtime
+        when = ("%d min ago" % max(1, age // 60)) if age < 3600 else ("%d h ago" % (age // 3600)) if age < 86400 else ("%d days ago" % (age // 86400))
+        return "%s  (%s, %s)" % (shown, self.kind, when)
+
+
+def find_candidates(cwd=None, extra_roots=()):
+    """Look for deployable plugins: built folders and plugin zips in the current folder and in the
+    build/ and dist/ folders of projects under ./plugins and ./examples (also those next to this script)."""
+    cwd = os.path.abspath(cwd or os.getcwd())
+    sdk = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    spots = [cwd, os.path.join(cwd, "build"), os.path.join(cwd, "dist")]
+    for base in dict.fromkeys([cwd, sdk] + list(extra_roots)):
+        for group in ("plugins", "examples"):
+            gdir = os.path.join(base, group)
+            try:
+                projects = sorted(os.listdir(gdir))
+            except OSError:
+                continue
+            for proj in projects:
+                spots += [os.path.join(gdir, proj, "build"), os.path.join(gdir, proj, "dist")]
+    found = {}
+    for spot in spots:
+        if not os.path.isdir(spot):
+            continue
+        for f in built_folders(spot):
+            m = read_manifest(f)
+            if m and m.get("name") and m.get("manufacturer"):
+                found[os.path.realpath(f)] = Candidate(f, "folder", m)
+        for z in zips_in(spot):
+            m = plugin_zip_manifest(z)
+            if m:
+                found[os.path.realpath(z)] = Candidate(z, "zip", m)
+    return sorted(found.values(), key=lambda c: -c.mtime)[:15]
 
 
 def extract_zip(zpath, dest):
@@ -1183,15 +1270,29 @@ def post_install_notes(ctx):
     say()
 
 
+def pick_source(replace):
+    """Offer plugins found near the current folder, or let the user type a path. Returns a list of paths."""
+    cands = find_candidates()
+    if cands:
+        items = [(c.label(), c.detail(os.getcwd())) for c in cands] + [("Enter a file path…" if S.unicode else "Enter a file path...", "a zip or an SDK project folder")]
+        idx = choose("Which plugin do you want to %s?" % ("update" if replace else "add"), items, allow_back=True)
+        if idx is None:
+            return []
+        if idx < len(cands):
+            return [cands[idx].path]
+    else:
+        say("  " + S.dim("No built plugins or plugin zips found nearby (looked in this folder, plugins/ and examples/)."))
+    val = ask("Plugin zip or folder (Tab completes)", path=True)
+    return parse_paths(val) if val else []
+
+
 def action_add(ctx, sources, replace=False):
     if not require_writable(ctx):
         return False
     if not sources:
         if not interactive():
             raise UsageError("Give a zip file or an SDK plugin folder to %s." % ("update" if replace else "add"))
-        say("  " + S.dim("Type the path to a plugin zip or to an SDK project folder (for example plugins/MySynth)."))
-        val = ask("Plugin zip or folder (Tab completes)", path=True)
-        sources = parse_paths(val) if val else []
+        sources = pick_source(replace)
         if not sources:
             return False
     all_ok = True
@@ -1326,6 +1427,45 @@ def action_export(ctx, names, export_all, out_dir):
     return ok
 
 
+def action_restart(ctx):
+    """Restart the MPC application so it rescans VST2 plugins. Everything unsaved in the open project is lost."""
+    say()
+    panel("Restart the MPC application?", [
+        S.warnc(S.warn) + " " + S.bold("Any unsaved data will be lost."),
+        "",
+        "The MPC app will close and start again, which makes it rescan its VST2 plugins.",
+        "Save your project on the MPC first. Audio stops while it restarts (about a minute).",
+    ], "warn")
+    say()
+    if not confirm("Restart the MPC now?", False, ctx.assume_yes):
+        say("  %s %s" % (S.warnc(S.warn), "Not restarted%s." % ("" if interactive() else " (pass --yes to confirm)")))
+        return interactive()
+    unit = shlex.quote(MPC_SERVICE)
+    rc, out, err = ctx.remote.text("systemctl cat %s >/dev/null 2>&1" % unit)
+    if rc != 0:
+        say("  %s %s" % (S.badc(S.bad), "This MPC has no '%s' service, so I can't restart it. Power-cycle it from the MPC instead." % MPC_SERVICE))
+        return False
+    with Step("Restarting the MPC application") as st:
+        rc, out, err = ctx.remote.text("systemctl restart %s" % unit, timeout=120)
+        if rc != 0:
+            st.fail(err.splitlines()[-1] if err else "systemctl failed (exit %d)" % rc)
+            return False
+        state = ""
+        for _ in range(60):
+            rc, out, err = ctx.remote.text("systemctl is-active %s" % unit)
+            state = out.strip()
+            if state == "active":
+                break
+            time.sleep(1)
+        if state != "active":
+            st.fail("service is '%s'; check the MPC screen" % (state or "unknown"))
+            return False
+        st.done("running again")
+    say("  %s %s" % (S.dim(S.info), "The MPC takes a little longer to finish loading. Your plugins appear under External VST Plugins."))
+    say()
+    return True
+
+
 # ----------------------------------------------------------------------------------------------
 # Doctor
 # ----------------------------------------------------------------------------------------------
@@ -1386,12 +1526,13 @@ def menu(ctx, drives):
         ("Update a plugin", "replace an installed plugin with a newer build"),
         ("Remove a plugin", ""),
         ("Export a plugin", "save it from the MPC as a zip"),
+        ("Restart MPC to rescan VSTs", "restarts the MPC app; unsaved data is lost"),
         ("Check this MPC", "diagnostics"),
         ("Switch drive", ctx.drive.name),
     ]
     while True:
         say()
-        idx = choose("What would you like to do?", entries[:-1] + ([entries[-1]] if len(drives) > 1 else []), allow_back=True)
+        idx = choose("What would you like to do?", entries[:-1] + ([entries[-1]] if len(drives) > 1 else []), allow_back=True, back_label="exit")
         say()
         if idx is None:
             say("  " + S.dim("Bye!"))
@@ -1408,8 +1549,10 @@ def menu(ctx, drives):
             elif idx == 4:
                 action_export(ctx, [], False, None)
             elif idx == 5:
-                action_doctor(ctx, drives)
+                action_restart(ctx)
             elif idx == 6:
+                action_doctor(ctx, drives)
+            elif idx == 7:
                 ctx.drive = pick_drive(drives, None, False)
                 entries[-1] = ("Switch drive", ctx.drive.name)
         except UsageError as e:
@@ -1443,6 +1586,7 @@ def build_parser():
     sub.add_parser("drives", parents=[common], help="list drives")
     sub.add_parser("list", parents=[common], help="list installed plugins")
     sub.add_parser("doctor", parents=[common], help="check the MPC is set up correctly")
+    sub.add_parser("restart", parents=[common], help="restart the MPC app so it rescans VST2 plugins (unsaved data is lost)")
     a = sub.add_parser("add", parents=[common], help="install plugins from zip files or SDK project folders")
     a.add_argument("sources", nargs="*")
     u = sub.add_parser("update", parents=[common], help="install, replacing any existing copy without asking")
@@ -1492,6 +1636,9 @@ def main(argv=None):
         say()
         panel("Your MPC", info_rows(host, info))
         say()
+
+        if args.command == "restart":  # needs no drive
+            return EXIT_OK if action_restart(Context(remote, info, None, args.yes, workdir)) else EXIT_FAIL
 
         with Step("Looking for drives") as st:
             drives = discover_drives(remote)
