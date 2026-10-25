@@ -2,7 +2,9 @@
 """mpc_remote.py - manage VST2 plugins on an Akai MPC over the network.
 
 Usage:
-    mpc_remote.py [HOST] [options] [command ...]
+    mpc_remote.py [ADDRESS] [options] [command ...]
+
+The MPC's address can also be given as --address ADDRESS (or the MPC_ADDRESS environment variable).
 
     mpc_remote.py 192.168.1.50                       interactive menu
     mpc_remote.py 192.168.1.50 info                  show the device and its drives
@@ -1345,8 +1347,9 @@ def build_parser():
     p = argparse.ArgumentParser(prog="mpc_remote.py", description="Manage VST2 plugins on an Akai MPC over the network.",
                                 formatter_class=argparse.RawDescriptionHelpFormatter,
                                 epilog="Run with just an address for an interactive menu.")
-    p.add_argument("--host", default=os.environ.get("MPC_HOST"),
-                   help="IP address or name of the MPC; normally given as the first argument (or set MPC_HOST)")
+    p.add_argument("--address", "--host", dest="address", metavar="ADDRESS",
+                   default=os.environ.get("MPC_ADDRESS") or os.environ.get("MPC_HOST"),
+                   help="IP address or name of the MPC; normally given as the first argument (or set MPC_ADDRESS)")
     for target, default in ((p, True), (common, False)):
         d = (lambda v: v) if default else (lambda v: argparse.SUPPRESS)
         target.add_argument("--password", default=d(None), help="SSH password if needed (or set MPC_SSH_PASSWORD)")
@@ -1385,7 +1388,7 @@ def main(argv=None):
     S = Style(color)
 
     banner()
-    host = host_arg or args.host
+    host = host_arg or args.address
     if not host:
         if not interactive():
             say("  %s %s" % (S.badc(S.bad), "Give the MPC's IP address as the first argument."))
