@@ -7,7 +7,8 @@ For full control over the look (images, custom widgets, envelopes), read `ui-ref
 ## The screen
 
 - Pages are function keys along the bottom of the screen; the page name is the key label (keep it short, 8 characters or fewer).
-- Each page is a 4 × 4 grid of control slots, matching the 16 hardware knobs (Q-Links) in their 4 × 4 arrangement on MPCs. Touching a control assigns that column of knobs. On products with knobs in a row (Force, MPC X) the mapping still works; the bank buttons select the column.
+- Each page offers a 4 × 4 grid of control slots, matching the 16 hardware knobs (Q-Links) in their 4 × 4 arrangement on MPCs. The grid is a convenience of the simple `ui.json` layout, not a limit of the MPC: with a hand-written skin controls can go anywhere (see `ui-reference.md`).
+- The hardware knobs work in **groups of four**. Touching a control selects its group, and the MPC draws a focus rectangle around that group on screen. That rectangle looks right only when the four controls it encloses sit together as one block, so lay pages out as blocks of four side by side: a row of four, or a column of four. Q-Link groups can run horizontally or vertically around the on-screen controls (bank direction `Row` or `Column`), so either shape is fine; mixing them on one page is fine too, as long as every control belongs to a clean block of four. On products with fewer knobs (Force, MPC X) the mapping still works; the bank buttons select the group.
 - Controls are listed in reading order: left to right, top to bottom. Leave a slot empty with `"empty"`.
 - Each control shows the parameter's name and current value text from your code. Double-tap or Enter opens a large edit overlay.
 
@@ -93,7 +94,7 @@ Rules of thumb:
 
 - Top row of page 1: the four controls someone touches first (cutoff and resonance on a synth; time, feedback and mix on a delay), as knobs or faders, never switches.
 - Group by signal flow: oscillators, filter, envelopes, modulation, effects, output. Put a section's switch (its mode) in the same row as the knobs it changes.
-- Keep columns coherent: the Q-Link under a column drives all four slots, so stack related things vertically (the four stages of an envelope in one column works as well as one row).
+- Make each block of four mean something. The four knobs of a Q-Link group drive its four controls and the focus rectangle wraps them, so put one related set in each block: the four stages of an envelope, the cutoff / resonance / drive / key-tracking of a filter, the time / feedback / tone / mix of a delay. A block of four can be a row or a column. Avoid splitting a section across two blocks, and avoid blocks that mix unrelated controls just to fill space; a deliberate `empty` slot or a `text` heading is better than a stray control.
 - One theme per plugin. `mpc-red` matches the MPC; `amber` suits drums and analogue-style synths, `cyan` delays, reverbs and digital effects, `lime` and `violet` playful instruments, `mono` utilities. An `accent` colour makes the kit match a brand.
 - Do not rely on colour alone; the MPC screen is small and often viewed from an angle. Short names and unit-bearing value text (`1.2 kHz`, `-6.0 dB`, `1/8T`) matter more than the graphics.
 

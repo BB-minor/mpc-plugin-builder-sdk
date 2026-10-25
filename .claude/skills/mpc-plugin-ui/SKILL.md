@@ -26,7 +26,7 @@ Edit `plugins/<Name>/ui.json`; `tools/build.py` turns it into the skin files. Fu
 ```
 
 - Controls are parameter **names** exactly as declared in code (not ids). `build/params.json` lists them after a native build.
-- ≤ 16 controls per page, reading order into a 4 × 4 grid that matches the 16 hardware knobs; page names ≤ 8 characters; ≤ 32 pages.
+- ≤ 16 controls per page, reading order into a 4 × 4 grid that matches the 16 hardware knobs. The MPC itself does not require a grid (hand-written skins place controls freely), but the knobs work in **groups of four** and the focus rectangle wraps a group, so arrange controls as blocks of four (a row of four or a column of four; Q-Link groups can be horizontal or vertical). Each block should be one coherent set, so the interface looks intentionally aligned; page names ≤ 8 characters; ≤ 32 pages.
 - Widgets: `knob`, `fader`, `switch` (kit), `slider` (generic bar), `text`, `empty`. `polarity` (`auto` / `unipolar` / `bipolar`) on knobs and faders. `overlay: "menu"` for long choice lists. `visibleWhen` shows a control only for a given choice/bool value.
 - `kit`: `mpc-red` (default), `amber`, `cyan`, `lime`, `violet`, `mono`, or `{ "theme": "...", "accent": "AARRGGBB" }`. One theme per plugin. The build renders it (cached in `build/`) and copies only the PNGs the layout uses.
 - `switch` needs a bool or a choice parameter with ≤ 4 choices; the generator fails with a hint otherwise.
@@ -39,8 +39,9 @@ Edit `plugins/<Name>/ui.json`; `tools/build.py` turns it into the skin files. Fu
 3. **Anything centred on zero (pan, tune, pitch offset, signed mod amounts) → `knob`, bipolar.** Auto-detection catches centre-zero defaults; set `"polarity": "bipolar"` when the range is signed but the default is not zero.
 4. **Every other continuous parameter (cutoff, resonance, drive, time, feedback, rate, depth, width) → `knob`.**
 5. `slider` only when the value text is the point (note names, divisions, ratios) or the list is long.
-6. Same role, same widget on every page. Top row of page 1 = the four controls touched first, knobs or faders, never switches. Group by signal flow; keep a section's mode switch beside the knobs it affects. Rarely used settings go on a `MORE` page; leave them out of the UI if they are rarely touched (still saved and automatable).
-7. Theme: `mpc-red` unless the plugin has a character (`amber` drums/analogue, `cyan` delay/reverb/digital, `lime`/`violet` playful, `mono` utilities) or the user names a colour (`accent`).
+6. **Design in blocks of four.** One related set per row or column of four (envelope ADSR, filter cutoff/resonance/drive/tracking, delay time/feedback/tone/mix); never split a set across two blocks; use `empty` or a `text` heading rather than a stray control to complete a block. Choose rows or columns per page for whichever reads best, and stay consistent within a page.
+7. Same role, same widget on every page. Top row of page 1 = the four controls touched first, knobs or faders, never switches. Group by signal flow; keep a section's mode switch beside the knobs it affects. Rarely used settings go on a `MORE` page; leave them out of the UI if they are rarely touched (still saved and automatable).
+8. Theme: `mpc-red` unless the plugin has a character (`amber` drums/analogue, `cyan` delay/reverb/digital, `lime`/`violet` playful, `mono` utilities) or the user names a colour (`accent`).
 
 Regenerate by rebuilding (`python tools/build.py plugins/<Name>`), or run the generator alone for a quick check:
 `python tools/gen_ui.py --params plugins/<Name>/build/params.json --ui plugins/<Name>/ui.json --out "plugins/<Name>/build/<Manufacturer> - VST - <Name>/Plugin Skins" --kit-cache plugins/<Name>/build`. Read its NOTE lines (bipolar auto-detection) and fix any ERROR (it names the control and the allowed values).

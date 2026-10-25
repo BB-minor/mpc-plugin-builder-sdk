@@ -69,5 +69,5 @@ Commands here say `python`; on macOS and some Linux systems only `python3` exist
 - One `.cpp` per plugin unless it grows past ~800 lines; then split DSP into headers under `src/`.
 - Comment the signal flow at the top of the file and each parameter's purpose. The user will read it.
 - Short, unit-bearing parameter names and sensible defaults; a master volume parameter first; 3–8 built-in programs.
-- A `ui.json` that uses the UI kit: `knob`, `fader` and `switch` widgets (heuristics in the `mpc-plugin-ui` skill), not pages of generic sliders.
+- A `ui.json` that uses the UI kit: `knob`, `fader` and `switch` widgets (heuristics in the `mpc-plugin-ui` skill), not pages of generic sliders. Arrange controls in blocks of four (a row or a column, one related set each) so the Q-Link focus rectangle encloses them cleanly.
 - Keep the project README honest: what works, what is not implemented, CPU expectations.

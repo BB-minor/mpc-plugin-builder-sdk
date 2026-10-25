@@ -121,6 +121,8 @@ The default skin's 4 x 4 slot grid, which the generator also uses, is:
 
 That is: `x` in {23, 343, 663, 983}, `y` in {45, 196, 346, 497}, size 278 x 107.
 
+This grid is only the generator's convention; the MPC does not require it, and in a hand-written skin controls can have any bounds. What matters is the Q-Link grouping: the 16 knobs work as groups of four (a column or a row, per `Bank Direction`, 8.3), and the MPC draws a focus rectangle (`qlinkBoundsData`, 3.6) around the active group. For that rectangle to enclose its controls cleanly, place each group's four controls together as a block, either side by side or stacked, and make the rectangle fit the block. Free positions that do not line up with the rectangles look accidental.
+
 The hardware can show a Q-Link sidebar over the right edge of the screen
 (roughly `x >= 1025`). Keep controls you care about to the left of that, or
 supply `qlinkBoundsData` on the tab (section 3.6) so the MPC knows where your
@@ -423,10 +425,13 @@ initialSize, scale`.
 
 ### 3.6 qlinkBoundsData
 
-An array of `"x y w h"` strings, one per Q-Link **column** of the layout, in
-tab coordinates. On hardware whose Q-Links are arranged in columns (the 4 x 4
-layout), the MPC highlights the rectangle of the column whose knobs are
-currently active. With the default slot grid, four columns of 248 px width
+An array of `"x y w h"` strings, one per Q-Link **group of four** in the layout,
+in tab coordinates. The MPC highlights the rectangle of the group whose knobs
+are currently active. A group can be a vertical column of four controls or a
+horizontal row of four (match `Bank Direction`, 8.3), and the rectangle can be
+any size and position, so size it to enclose the block of four controls you
+placed, with a little margin. Rectangles for a row layout are wide and short
+instead of tall and narrow. With the default slot grid, four columns of 248 px width
 with 20 px margins around the slots look like this:
 
 ```json

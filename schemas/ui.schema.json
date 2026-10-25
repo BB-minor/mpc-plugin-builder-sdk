@@ -2,7 +2,7 @@
     "$schema": "http://json-schema.org/draft-07/schema#",
     "$id": "https://github.com/pgoodliffe/plugin-vibecode-sdk/schemas/ui.schema.json",
     "title": "MPC plugin UI layout (ui.json)",
-    "description": "Optional layout spec consumed by tools/gen_ui.py to generate the MPC 'Plugin Skins' (TUI.json + Q-Links.json). Each page is one tab on the MPC screen with a 4 x 4 grid of controls laid out in reading order; each control is bound to one plugin parameter (by the name the plugin reports) and to the Q-Link knob under its column. Without ui.json, gen_ui.py lays out all parameters automatically, 16 per page.",
+    "description": "Optional layout spec consumed by tools/gen_ui.py to generate the MPC 'Plugin Skins' (TUI.json + Q-Links.json). Each page is one tab on the MPC screen with a 4 x 4 grid of controls laid out in reading order (the MPC itself does not require a grid, but the hardware knobs work in groups of four and the focus rectangle wraps each group, so treat each row or column of four as one related block); each control is bound to one plugin parameter (by the name the plugin reports) and to the Q-Link knob under its column. Without ui.json, gen_ui.py lays out all parameters automatically, 16 per page.",
     "type": "object",
     "required": [
         "pages"
