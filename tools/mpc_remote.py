@@ -246,19 +246,91 @@ def interactive():
     return sys.stdin.isatty() and sys.stdout.isatty()
 
 
-def ask(prompt, default=None, secret=False):
-    suffix = " [%s]" % default if default else ""
-    text = "  %s %s%s " % (S.accent("?"), S.bold(prompt), S.dim(suffix))
+try:
+    import readline  # tab completion and line editing; not available on Windows
+except ImportError:
+    readline = None
+
+BOX_WIDTH = 60
+
+
+def complete_path(text, state):
+    """readline completer: local filenames, with ~ and spaces in names handled."""
+    if text == "~":
+        matches = ["~/"]
+    else:
+        typed_dir, _, base = text.rpartition("/")
+        typed_dir = typed_dir + "/" if "/" in text else ""
+        real_dir = os.path.expanduser(typed_dir) or "."
+        try:
+            names = sorted(os.listdir(real_dir))
+        except OSError:
+            names = []
+        matches = []
+        for n in names:
+            if n.startswith(base) and (base.startswith(".") or not n.startswith(".")):
+                matches.append(typed_dir + n + ("/" if os.path.isdir(os.path.join(real_dir, n)) else ""))
+    return matches[state] if state < len(matches) else None
+
+
+def _readline_safe(prompt):
+    """Wrap colour codes so readline measures the prompt width correctly."""
+    if readline is None:
+        return prompt
+    return re.sub(r"(\x1b\[[0-9;]*m)", "\x01\\1\x02", prompt)
+
+
+def ask(prompt, default=None, secret=False, path=False):
+    """A titled input box. Falls back to a plain prompt when not on a terminal."""
+    tl, tr, bl, br, h, v = S.box
+    suffix = "  (Enter for %s)" % default if default else ""
+    if interactive():
+        title = prompt
+        width = max(BOX_WIDTH, visible_len(title + suffix) + 6)
+        width = min(width, max(40, shutil.get_terminal_size((100, 24)).columns - 4))
+        say(S.accent(tl + h + " ") + S.bold(title) + S.dim(suffix) + " " + S.accent(h * max(2, width - visible_len(title + suffix) - 3)))
+        text = S.accent(v) + " " + S.accent(S.arrow) + " "
+    else:
+        width = 0
+        text = "%s%s: " % (prompt, suffix)
+    old_completer = None
+    if path and readline is not None and interactive():
+        old_completer = readline.get_completer()
+        readline.set_completer(complete_path)
+        readline.set_completer_delims("\n")  # a path may contain spaces
+        if "libedit" in (readline.__doc__ or ""):
+            readline.parse_and_bind("bind ^I rl_complete")
+        else:
+            readline.parse_and_bind("tab: complete")
     try:
         if secret:
-            val = getpass.getpass(re.sub(r"\x1b\[[0-9;]*m", "", text))
+            val = getpass.getpass(ANSI_RE.sub("", text))
         else:
-            val = input(text)
+            val = input(_readline_safe(text))
     except (EOFError, KeyboardInterrupt):
         say()
         raise SystemExit(EXIT_FAIL)
+    finally:
+        if path and readline is not None and interactive():
+            readline.set_completer(old_completer)
+    if width:
+        say(S.accent(bl + h * (width - 1)))
     val = val.strip()
     return val if val or default is None else default
+
+
+def parse_paths(val):
+    """One path (spaces allowed, quotes or backslashes optional) or several quoted ones."""
+    v = val.strip()
+    if len(v) > 1 and v[0] == v[-1] and v[0] in "\"'":
+        v = v[1:-1]
+    v = v.replace("\\ ", " ")
+    if os.path.exists(os.path.expanduser(v)):
+        return [v]
+    try:
+        return shlex.split(val)
+    except ValueError:
+        return [v]
 
 
 def confirm(prompt, default=False, assume_yes=False):
@@ -273,19 +345,23 @@ def confirm(prompt, default=False, assume_yes=False):
 
 
 def choose(title, items, allow_back=False):
-    """items: list of (label, detail). Returns the chosen index or None for back."""
-    say("  " + S.bold(title))
+    """items: list of (label, detail), shown in a box. Returns the chosen index or None for back."""
+    rows = []
+    numw = len(str(len(items)))
+    labelw = max([visible_len(label) for label, _ in items] + [0])
     for i, (label, detail) in enumerate(items, 1):
-        say("    %s %s%s" % (S.accent("%d" % i), label, ("  " + S.dim(detail)) if detail else ""))
+        rows.append("%s  %s%s" % (S.accent(str(i).rjust(numw)), pad(label, labelw) if detail else label,
+                                  ("  " + S.dim(detail)) if detail else ""))
     if allow_back:
-        say("    %s %s" % (S.accent("0"), S.dim("back")))
+        rows.append("%s  %s" % (S.accent("0".rjust(numw)), S.dim("back")))
+    panel(title, rows)
     while True:
-        val = ask("Choose")
+        val = ask("Choose a number")
         if allow_back and val in ("0", "q", ""):
             return None
         if val.isdigit() and 1 <= int(val) <= len(items):
             return int(val) - 1
-        say("    " + S.warnc("Enter a number from the list."))
+        say("  " + S.warnc("Enter a number from the list."))
 
 
 def fail_panel(title, lines, tone="bad"):
@@ -1110,8 +1186,8 @@ def action_add(ctx, sources, replace=False):
         if not interactive():
             raise UsageError("Give a zip file or an SDK plugin folder to %s." % ("update" if replace else "add"))
         say("  " + S.dim("Type the path to a plugin zip or to an SDK project folder (for example plugins/MySynth)."))
-        val = ask("Plugin zip or folder")
-        sources = shlex.split(val) if val else []
+        val = ask("Plugin zip or folder (Tab completes)", path=True)
+        sources = parse_paths(val) if val else []
         if not sources:
             return False
     all_ok = True
@@ -1208,7 +1284,7 @@ def action_export(ctx, names, export_all, out_dir):
             return True
         targets = plugins if idx == len(plugins) else [plugins[idx]]
         if interactive():
-            out_dir = ask("Save zip files to", out_dir or os.getcwd())
+            out_dir = ask("Save zip files to (Tab completes)", out_dir or os.getcwd(), path=True)
     else:
         raise UsageError("Say which plugin to export, or use --all.")
     out_dir = os.path.expanduser(out_dir or os.getcwd())
