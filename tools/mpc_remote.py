@@ -720,6 +720,14 @@ class Drive:
         return self.name.startswith(INTERNAL_DRIVE_PREFIXES)
 
     @property
+    def recommended(self):
+        """The internal user-content storage: the best place for plugins (survives removing cards)."""
+        return self.name.startswith("az01-internal-sd") or self.mount == NVME_MOUNT
+
+    def mark(self):
+        return S.good("●" if S.unicode else "*") if self.recommended else " "
+
+    @property
     def writable(self):
         return "rw" in self.options
 
@@ -781,8 +789,10 @@ def discover_drives(remote):
 def show_drives(drives):
     numw = len(str(len(drives)))
     namew = max(visible_len(d.name) for d in drives)
-    rows = ["%s  %s  %s" % (S.accent(str(i).rjust(numw)), S.bold(pad(d.name, namew)), d.describe())
+    rows = ["%s  %s %s  %s" % (S.accent(str(i).rjust(numw)), d.mark(), S.bold(pad(d.name, namew)), d.describe())
             for i, d in enumerate(drives, 1)]
+    if any(d.recommended for d in drives):
+        rows.append(S.good("●" if S.unicode else "*") + " " + S.dim("recommended: internal storage"))
     panel("Drives found", rows, "amber")
 
 
@@ -803,7 +813,7 @@ def pick_drive(drives, wanted, assume_yes):
     if not interactive():
         raise UsageError("Several drives found; choose one with --drive (%s)" % ", ".join("%d=%s" % (i, d.name) for i, d in enumerate(drives, 1)))
     say()
-    idx = choose("Which drive do you want to manage?", [(d.name, d.describe()) for d in drives])
+    idx = choose("Which drive do you want to manage?", [(d.mark() + " " + d.name, d.describe()) for d in drives])
     return drives[idx]
 
 
