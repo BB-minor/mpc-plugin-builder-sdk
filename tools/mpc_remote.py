@@ -156,7 +156,8 @@ def banner():
 def panel(title, rows, tone=None):
     """Rounded box with a title. rows is a list of strings (may hold ANSI)."""
     tl, tr, bl, br, h, v = S.box
-    paint = {"bad": S.badc, "warn": S.warnc, "good": S.good}.get(tone, S.cyan)
+    paint = {"bad": S.badc, "warn": S.warnc, "good": S.good,
+             "amber": lambda t: S.paint(t, S.fg(214)), "violet": lambda t: S.paint(t, S.fg(141))}.get(tone, S.cyan)
     width = max([visible_len(r) for r in rows] + [visible_len(title) + 4, 40])
     width = min(width, max(40, shutil.get_terminal_size((100, 24)).columns - 6))
     say(paint(tl + h + " ") + S.bold(title) + " " + paint(h * max(1, width - visible_len(title) - 1) + tr))
@@ -609,6 +610,7 @@ for f in model inmusic,product-code serial-number compatible; do
   if [ -r "$B/$f" ]; then tr '\000' ',' < "$B/$f"; fi
   echo
 done
+printf 'app=%s\n' "$(head -n 1 /tmp/com.akaipro.mpc.version 2>/dev/null)"
 printf 'uname=%s\n' "$(uname -srm 2>/dev/null)"
 printf 'arch=%s\n' "$(uname -m 2>/dev/null)"
 printf 'hostname=%s\n' "$(hostname 2>/dev/null)"
@@ -664,6 +666,7 @@ def info_rows(host, info):
     pairs.append(("Serial number", info.get("dt.serial-number") or S.dim("(not reported)")))
     if info.get("hostname"):
         pairs.append(("Hostname", info["hostname"]))
+    pairs.append(("MPC version", S.bold(info["app"]) if info.get("app") else S.dim("(not reported; is the MPC app running?)")))
     if info.get("firmware"):
         pairs.append(("Firmware version", S.bold(info["firmware"])))
     else:
@@ -774,10 +777,11 @@ def discover_drives(remote):
 
 
 def show_drives(drives):
-    rows = []
-    for i, d in enumerate(drives, 1):
-        rows.append([S.accent(str(i)), S.bold(d.name), d.describe()])
-    table(["#", "Drive", "Details"], rows)
+    numw = len(str(len(drives)))
+    namew = max(visible_len(d.name) for d in drives)
+    rows = ["%s  %s  %s" % (S.accent(str(i).rjust(numw)), S.bold(pad(d.name, namew)), d.describe())
+            for i, d in enumerate(drives, 1)]
+    panel("Drives found", rows, "amber")
 
 
 def pick_drive(drives, wanted, assume_yes):
