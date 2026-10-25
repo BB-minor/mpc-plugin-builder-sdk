@@ -11,9 +11,19 @@ You turn a description into a complete plugin project under `plugins/<Name>/` th
 
 From the description, settle:
 - **Kind**: `instrument` (makes sound from MIDI notes: synths, drum machines, samplers, sequencer-instruments) or `effect` (processes the track's audio; receives NO MIDI). An arpeggiator or step sequencer must be an instrument that makes its own sound, because plugins cannot send MIDI to the MPC.
-- **Name** (short, 1–3 words) and **manufacturer** (the user's name or brand; ask if unknown, default `"MPC Vibecoder"`).
+- **Name** (short, 1–3 words) and **manufacturer** (the user's name or brand). See "Confirm the manufacturer and plugin name" below; never invent a generic manufacturer such as "MPC Vibecoder".
 - **Parameters**: 6–24 is typical. Each gets a short screen name (≤ 12 chars), a kind (float / int / bool / choice), range, unit, default. Group them into pages of ≤ 16 for the UI.
 - **Channels**: instruments 0 in / 2 out (multi-out: 4, 6 or 8 outs as stereo pairs); effects 2 in / 2 out.
+
+### Confirm the manufacturer and plugin name
+
+The manufacturer name appears on the MPC, in the folder name and in the plugin's permanent identity, so it must be a real, deliberate choice.
+
+- If the user's prompt already gives their name or brand (e.g. "by Acme Audio"), use it and do not ask again.
+- If it does not, **stop and ask before scaffolding**: "What name should appear as the manufacturer of this plugin? This is usually your name or your brand."
+- In the same message, show the plugin name you propose (e.g. "I'd call the plugin **Wobble Bass**") and invite the user to change it. If they gave a name, show that instead and still allow changes.
+- Wait for the answer. Only continue once both names are settled. If the user declines to give a manufacturer, ask once more explaining that it is shown on the device and is hard to change later; only then accept their stated preference.
+- Do not rename after the build: `uid`, folder and `plugin.json` are derived from these names (see the "Identity is permanent" rule in AGENTS.md).
 
 ## 2. Scaffold
 

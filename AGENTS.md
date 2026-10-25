@@ -23,6 +23,7 @@ Use the skills in `.claude/skills/` (Claude Code) or `.agents/skills/` (Codex); 
 
 ## The workflow, every time
 
+0. **Manufacturer name**: if the user has not given their name or brand in their prompt, ask for it before doing anything else (it becomes the plugin manufacturer). In the same message, show the plugin name you propose and let them change it. Never fall back to a generic default such as "MPC Vibecoder".
 1. `python tools/new_plugin.py "<Name>" --vendor "<Manufacturer>" --kind instrument|effect`
 2. Write `src/<Class>.cpp` against `framework/mpc_plugin.h` using `framework/dsp/*.h`; write `ui.json`; write `README.md`.
 3. `python tools/build.py plugins/<Name>` until it is clean.
@@ -35,6 +36,7 @@ Never report a plugin as done without steps 3 and 4 passing.
 
 - **Realtime**: no allocation, locks, logging or I/O in `process()`. Block size is a maximum; frames per call vary (32–512). Clamp inputs to filters and divisions.
 - **Identity is permanent**: `uid` (plugin.json and `MPC_FOURCC` in code must match), parameter `id` strings, and parameter order must not change once a user has projects. Append new parameters at the end.
+- **Ask for the manufacturer name** when the prompt does not contain one, and show the proposed plugin name for confirmation. Do not invent a generic default.
 - **Names must agree**: `plugin.json` `name`/`manufacturer` == `PluginInfo` `name`/`vendor` == folder name parts. The UI is found by those strings.
 - **Effects get no MIDI; plugins cannot send MIDI to the MPC.** Sequencers and arpeggiators are instruments that make their own sound.
 - **Parameter 0 is nudged by the host on every load.** Make it harmless (master volume) with no side effects.
