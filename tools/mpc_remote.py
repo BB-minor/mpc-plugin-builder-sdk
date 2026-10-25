@@ -57,8 +57,7 @@ import zipfile
 ILLEGAL_FILENAME_CHARS = '"#@,;:<>*^|?\\/'  # the exact set the MPC strips when it builds the folder name
 PLUGINS_DIR = "VST2 Plugins"
 INTERNAL_DRIVE_PREFIXES = ("az01-internal", "acvs-synths", "acvs-content", "nvme")
-NVME_MOUNT = "/nvme"  # internal NVMe on units that have one; the user folder is "MPC Documents"
-NVME_USER_FOLDER = "MPC Documents"
+NVME_MOUNT = "/nvme"  # internal NVMe on units that have one; "VST2 Plugins" lives at its root
 CPU_PARTS = {  # ARM "CPU part" ids as shown in /proc/cpuinfo
     "0xc07": "Cortex-A7", "0xc0f": "Cortex-A15", "0xc0e": "Cortex-A17", "0xd03": "Cortex-A53",
     "0xd04": "Cortex-A35", "0xd05": "Cortex-A55", "0xd07": "Cortex-A57", "0xd08": "Cortex-A72",
@@ -705,9 +704,8 @@ def device_arch(info):
 
 
 class Drive:
-    def __init__(self, device, mount, fstype, options, plugins_parent=None):
+    def __init__(self, device, mount, fstype, options):
         self.device = device
-        self.plugins_parent = plugins_parent  # folder that holds "VST2 Plugins" (default: the drive root)
         self.mount = mount
         self.fstype = fstype
         self.options = options.split(",")
@@ -737,12 +735,10 @@ class Drive:
 
     @property
     def plugins_path(self):
-        return (self.plugins_parent or self.mount.rstrip("/")) + "/" + PLUGINS_DIR
+        return self.mount.rstrip("/") + "/" + PLUGINS_DIR
 
     def describe(self):
         bits = ["internal" if self.internal else "removable", self.fstype]
-        if self.plugins_parent:
-            bits.append("in " + self.plugins_parent[len(self.mount):].strip("/"))
         if self.free is not None:
             bits.append("%s free of %s" % (human_size(self.free), human_size(self.total)))
         if not self.writable:
@@ -767,9 +763,7 @@ def discover_drives(remote):
         mount = unescape_mount(parts[1])
         if parts[2] in ("tmpfs", "proc", "sysfs", "devtmpfs", "devpts"):
             continue
-        if mount == NVME_MOUNT:
-            drives.append(Drive(parts[0], mount, parts[2], parts[3], plugins_parent=mount + "/" + NVME_USER_FOLDER))
-        elif mount.startswith("/media/"):
+        if mount == NVME_MOUNT or mount.startswith("/media/"):
             drives.append(Drive(parts[0], mount, parts[2], parts[3]))
     for line in df.splitlines()[1:]:
         parts = line.split()
@@ -1334,6 +1328,11 @@ def action_add(ctx, sources, replace=False):
         say()
         say("  %s %s" % (S.good(S.ok), S.bold("Installed %d plugin%s on %s" % (installed, "" if installed == 1 else "s", ctx.drive.name))))
         post_install_notes(ctx)
+        if interactive() and not ctx.assume_yes:
+            action_restart(ctx, after_install=True)  # shows the unsaved-data warning and asks first
+        else:  # never restart unattended: it throws away the open project
+            say("  %s %s" % (S.dim(S.info), "Run the restart command to make the MPC rescan its plugins (unsaved data is lost)."))
+            say()
     return all_ok
 
 
@@ -1444,17 +1443,19 @@ def action_export(ctx, names, export_all, out_dir):
     return ok
 
 
-def action_restart(ctx):
+def action_restart(ctx, after_install=False):
     """Restart the MPC application so it rescans VST2 plugins. Everything unsaved in the open project is lost."""
     say()
-    panel("Restart the MPC application?", [
+    panel("Restart the MPC to rescan VSTs?" if after_install else "Restart the MPC application?", [
         S.warnc(S.warn) + " " + S.bold("Any unsaved data will be lost."),
         "",
-        "The MPC app will close and start again, which makes it rescan its VST2 plugins.",
+        "The MPC only looks for new VST2 plugins on an internal drive when its app starts."
+        if after_install else "The MPC app will close and start again, which makes it rescan its VST2 plugins.",
+        *(["Restarting it now makes it rescan automatically, so your new plugin appears without you doing anything else."] if after_install else []),
         "Save your project on the MPC first. Audio stops while it restarts (about a minute).",
     ], "warn")
     say()
-    if not confirm("Restart the MPC now?", False, ctx.assume_yes):
+    if not confirm("Restart the MPC now so it rescans VSTs?" if after_install else "Restart the MPC now?", False, ctx.assume_yes):
         say("  %s %s" % (S.warnc(S.warn), "Not restarted%s." % ("" if interactive() else " (pass --yes to confirm)")))
         return interactive()
     unit = shlex.quote(MPC_SERVICE)
