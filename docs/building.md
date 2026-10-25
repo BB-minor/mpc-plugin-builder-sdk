@@ -15,7 +15,17 @@ This:
 3. Copies `plugin.json`, generates (or copies) the `Plugin Skins`, copies the project's `Content/` folder (samples, wavetables, ...) if there is one, writes `version.xml`.
 4. Runs the validator.
 
-Options: `--target native|arm32|arm64|all`, `--debug`, `--no-ui`, `--no-validate`, `--toolchain zig|gcc|docker`, `--define NAME=VALUE`, `--verbose`.
+Options: `--target native|arm32|arm64|desktop|all`, `--debug`, `--no-ui`, `--no-validate`, `--toolchain zig|gcc|docker`, `--define NAME=VALUE`, `--verbose`.
+
+### Desktop VST2 (`--target desktop`)
+
+`python tools/build.py plugins/<Name> --target desktop` builds the same plugin as a generic VST2 for the computer you are on, so it can be loaded in a desktop VST2 host (Reaper, MPC Software, and so on). It does not build the MPC folder. There is no UI: the host shows its own parameter list (the MPC `Plugin Skins` are not used).
+
+- **macOS**: `build/desktop/<Name>.vst`, a universal (arm64 + x86_64) bundle, ad-hoc signed, exporting both `VSTPluginMain` and `main_macho`. Copy it to `~/Library/Audio/Plug-Ins/VST/`. Needs Apple's command line tools (`xcode-select --install`) for the universal build; otherwise it falls back to a build for this CPU only.
+- **Windows**: `build/desktop/<Name>/<slug>.dll` (64-bit) with `plugin.json` and `Content/` beside it. Copy the whole folder into the host's VST2 folder.
+- **Linux**: `build/desktop/<Name>/<slug>.so`, same layout; copy it to `~/.vst`.
+- `Content/` goes with the plugin (inside the bundle's `Contents/Resources` on macOS), and `mpc_resources.h` finds it there.
+- The desktop build is for a quick listen and for hosts like Reaper; many current hosts have dropped VST2, so check yours. The Windows and Linux outputs are cross-compile-checked only; the macOS bundle has been run through `host_sim`.
 
 ## Toolchain: zig (default, recommended)
 

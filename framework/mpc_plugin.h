@@ -813,12 +813,24 @@ inline AEffect* createEffect(Plugin* plugin, audioMasterCallback host)
 } // namespace mpc
 
 // Put this at the end of your plugin's .cpp file.
-#define MPC_PLUGIN_ENTRY(PluginClass)                                                        \
-    extern "C" MPC_EXPORT AEffect* VSTPluginMain(audioMasterCallback host)                   \
+#define MPC_PLUGIN_ENTRY_BODY(PluginClass)                                                   \
     {                                                                                        \
         if (host != nullptr && host(nullptr, audioMasterVersion, 0, 0, nullptr, 0.0f) == 0)  \
             return nullptr; /* host is VST1 only */                                          \
         return mpc::detail::createEffect(new PluginClass(), host);                           \
     }
+
+#if defined(__APPLE__)
+  // Older macOS VST2 hosts look for main_macho instead of VSTPluginMain; export both.
+  #define MPC_PLUGIN_ENTRY(PluginClass)                                                      \
+    extern "C" MPC_EXPORT AEffect* VSTPluginMain(audioMasterCallback host)                   \
+    MPC_PLUGIN_ENTRY_BODY(PluginClass)                                                       \
+    extern "C" MPC_EXPORT AEffect* main_macho(audioMasterCallback host)                      \
+    { return VSTPluginMain(host); }
+#else
+  #define MPC_PLUGIN_ENTRY(PluginClass)                                                      \
+    extern "C" MPC_EXPORT AEffect* VSTPluginMain(audioMasterCallback host)                   \
+    MPC_PLUGIN_ENTRY_BODY(PluginClass)
+#endif
 
 #endif // MPC_PLUGIN_H

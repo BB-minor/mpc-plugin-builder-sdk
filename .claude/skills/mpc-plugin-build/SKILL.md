@@ -26,3 +26,7 @@ Output: `plugins/<Name>/build/<Manufacturer> - VST - <Name>/` with `plugin.json`
 Build until there are no errors and the validator prints only OK lines (warnings acceptable if understood). Then run the `mpc-plugin-test` skill.
 
 Details: `docs/building.md`.
+
+## Desktop VST2 (listen on this computer, e.g. in Reaper)
+
+`python tools/build.py plugins/<Name> --target desktop` builds a generic, UI-less VST2 for the current computer into `plugins/<Name>/build/desktop/` (macOS: signed universal `<Name>.vst`; Windows/Linux: a folder with the `.dll`/`.so`, `plugin.json` and `Content/`). Tell the user where to copy it (printed at the end), that the host shows its own parameter list, and that the host must support VST2. This is not a substitute for the MPC build and `host_sim` checks.

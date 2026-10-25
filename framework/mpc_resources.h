@@ -18,7 +18,7 @@
 //
 // How it works: the library asks the OS where its own code was loaded from (/proc/self/maps on
 // Linux, dladdr on macOS, GetModuleHandleEx on Windows), then walks up from that file to the first
-// folder containing plugin.json. If none is found, a parent folder named "VST" is stepped out of,
+// folder containing plugin.json (inside a macOS .vst bundle: Contents/Resources). If none is found, a parent folder named "VST" is stepped out of,
 // else the library's own folder is used.
 //
 // Override for testing: set the environment variable MPC_PLUGIN_FOLDER to a folder. build.py also
@@ -144,6 +144,9 @@ inline std::string computePluginFolder()
     if (lib.empty()) return std::string();
 
     std::string dir = parentOf(lib);
+    // macOS desktop bundle: Name.vst/Contents/MacOS/<binary>; files live in Contents/Resources.
+    if (baseNameOf(dir) == "MacOS" && baseNameOf(parentOf(dir)) == "Contents")
+        return parentOf(dir) + "/Resources";
     std::string d = dir;
     for (int level = 0; level < 4 && !d.empty(); ++level)   // plugin.json marks the plugin folder
     {
