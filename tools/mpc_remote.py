@@ -1040,6 +1040,12 @@ class Candidate:
         self.manifest = manifest
         self.mtime = os.path.getmtime(path)
 
+    def glyph(self):
+        """Dark blue folder-like box for a folder, amber stacked-squares for a zip."""
+        if self.kind == "folder":
+            return S.paint("▤" if S.unicode else "D", S.fg(27))
+        return S.paint("⧉" if S.unicode else "Z", S.fg(214))
+
     def label(self):
         m = self.manifest
         return "%s%s" % (m.get("name", os.path.basename(self.path)), (" " + str(m["version"])) if m.get("version") else "")
@@ -1284,7 +1290,8 @@ def pick_source(replace):
     """Offer plugins found near the current folder, or let the user type a path. Returns a list of paths."""
     cands = find_candidates()
     if cands:
-        items = [(c.label(), c.detail(os.getcwd())) for c in cands] + [("Enter a file path…" if S.unicode else "Enter a file path...", "a zip or an SDK project folder")]
+        items = [(c.glyph() + " " + c.label(), c.detail(os.getcwd())) for c in cands] + [
+            ("  " + ("Enter a file path…" if S.unicode else "Enter a file path..."), "a zip or an SDK project folder")]
         idx = choose("Which plugin do you want to %s?" % ("update" if replace else "add"), items, allow_back=True)
         if idx is None:
             return []
