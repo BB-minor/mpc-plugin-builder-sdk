@@ -53,7 +53,14 @@ import zipfile
 
 ILLEGAL_FILENAME_CHARS = '"#@,;:<>*^|?\\/'  # the exact set the MPC strips when it builds the folder name
 PLUGINS_DIR = "VST2 Plugins"
-INTERNAL_DRIVE_PREFIXES = ("az01-internal", "acvs-synths", "acvs-content")
+INTERNAL_DRIVE_PREFIXES = ("az01-internal", "acvs-synths", "acvs-content", "nvme")
+NVME_MOUNT = "/nvme"  # internal NVMe on units that have one; the user folder is "MPC Documents"
+NVME_USER_FOLDER = "MPC Documents"
+CPU_PARTS = {  # ARM "CPU part" ids as shown in /proc/cpuinfo
+    "0xc07": "Cortex-A7", "0xc0f": "Cortex-A15", "0xc0e": "Cortex-A17", "0xd03": "Cortex-A53",
+    "0xd04": "Cortex-A35", "0xd05": "Cortex-A55", "0xd07": "Cortex-A57", "0xd08": "Cortex-A72",
+    "0xd09": "Cortex-A73", "0xd0a": "Cortex-A75", "0xd0b": "Cortex-A76", "0xd0d": "Cortex-A77",
+}
 JUNK_NAMES = {".DS_Store", "Thumbs.db", "desktop.ini"}
 MAX_ZIP_BYTES = 1 << 30
 
@@ -530,6 +537,12 @@ printf 'hostname=%s\n' "$(hostname 2>/dev/null)"
 printf 'uptime=%s\n' "$(cut -d' ' -f1 /proc/uptime 2>/dev/null)"
 if [ -r /etc/os-release ]; then sed 's/^/os./' /etc/os-release; fi
 if [ -e /data/dev-mode ]; then echo devmode.file=yes; fi
+for f in /etc/az0x-release /etc/az01-release; do
+  if [ -r "$f" ]; then sed -n 's/^\(AZ0[X1]_VERSION\)=/firmware=/p' "$f" | head -n 1; fi
+done
+printf 'cpu.count=%s\n' "$(grep -c '^processor' /proc/cpuinfo 2>/dev/null)"
+sed -n 's/^model name[[:space:]]*: */cpu.model=/p;s/^Hardware[[:space:]]*: */cpu.hardware=/p;s/^CPU part[[:space:]]*: */cpu.part=/p' /proc/cpuinfo 2>/dev/null | sort -u
+printf 'cpu.maxkhz=%s\n' "$(cat /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq 2>/dev/null)"
 """
 
 
@@ -539,8 +552,28 @@ def get_info(remote):
     for line in out.splitlines():
         if "=" in line:
             k, v = line.split("=", 1)
-            info[k.strip()] = v.strip().strip(",").strip().strip('"')
+            k = k.strip()
+            if k not in info:  # first value wins (cpu.part repeats per core type)
+                info[k] = v.strip().strip(",").strip().strip('"').strip("'")
     return info
+
+
+def cpu_summary(info):
+    """e.g. 'Cortex-A55 x4 @ 1.8 GHz'. Falls back to whatever the kernel reports."""
+    name = CPU_PARTS.get((info.get("cpu.part") or "").lower()) or info.get("cpu.model") or info.get("cpu.hardware") or ""
+    parts = []
+    if name:
+        parts.append(name + (" ×%s" % info["cpu.count"] if info.get("cpu.count", "0") not in ("", "0", "1") and S.unicode else
+                             (" x%s" % info["cpu.count"] if info.get("cpu.count", "0") not in ("", "0", "1") else "")))
+    try:
+        parts.append("@ %.1f GHz" % (int(info["cpu.maxkhz"]) / 1e6))
+    except (KeyError, ValueError):
+        pass
+    arch = info.get("arch") or ""
+    text = " ".join(parts) or arch
+    if arch and arch not in text:
+        text += " (%s)" % arch
+    return text
 
 
 def info_rows(host, info):
@@ -553,6 +586,16 @@ def info_rows(host, info):
     pairs.append(("Serial number", info.get("dt.serial-number") or S.dim("(not reported)")))
     if info.get("hostname"):
         pairs.append(("Hostname", info["hostname"]))
+    if info.get("firmware"):
+        pairs.append(("Firmware version", S.bold(info["firmware"])))
+    else:
+        pairs.append(("Firmware version", S.dim("(not reported)")))
+    cpu = cpu_summary(info)
+    if cpu:
+        pairs.append(("CPU", cpu))
+    arch = device_arch(info)
+    if arch:
+        pairs.append(("Architecture", "64-bit" if arch == "arm64" else "32-bit"))
     system = info.get("os.PRETTY_NAME") or info.get("os.NAME") or ""
     if info.get("os.VERSION_ID") and info["os.VERSION_ID"] not in system:
         system = (system + " " + info["os.VERSION_ID"]).strip()
@@ -579,8 +622,9 @@ def device_arch(info):
 
 
 class Drive:
-    def __init__(self, device, mount, fstype, options):
+    def __init__(self, device, mount, fstype, options, plugins_parent=None):
         self.device = device
+        self.plugins_parent = plugins_parent  # folder that holds "VST2 Plugins" (default: the drive root)
         self.mount = mount
         self.fstype = fstype
         self.options = options.split(",")
@@ -602,10 +646,12 @@ class Drive:
 
     @property
     def plugins_path(self):
-        return self.mount.rstrip("/") + "/" + PLUGINS_DIR
+        return (self.plugins_parent or self.mount.rstrip("/")) + "/" + PLUGINS_DIR
 
     def describe(self):
         bits = ["internal" if self.internal else "removable", self.fstype]
+        if self.plugins_parent:
+            bits.append("in " + self.plugins_parent[len(self.mount):].strip("/"))
         if self.free is not None:
             bits.append("%s free of %s" % (human_size(self.free), human_size(self.total)))
         if not self.writable:
@@ -628,9 +674,12 @@ def discover_drives(remote):
         if len(parts) < 4:
             continue
         mount = unescape_mount(parts[1])
-        if not mount.startswith("/media/") or parts[2] in ("tmpfs", "proc", "sysfs", "devtmpfs", "devpts"):
+        if parts[2] in ("tmpfs", "proc", "sysfs", "devtmpfs", "devpts"):
             continue
-        drives.append(Drive(parts[0], mount, parts[2], parts[3]))
+        if mount == NVME_MOUNT:
+            drives.append(Drive(parts[0], mount, parts[2], parts[3], plugins_parent=mount + "/" + NVME_USER_FOLDER))
+        elif mount.startswith("/media/"):
+            drives.append(Drive(parts[0], mount, parts[2], parts[3]))
     for line in df.splitlines()[1:]:
         parts = line.split()
         if len(parts) < 6:
@@ -1219,7 +1268,7 @@ def action_doctor(ctx, drives):
     else:
         row("warn", "Could not tell the processor type")
     if not drives:
-        row("bad", "No drives mounted under /media", "Insert a USB drive or SD card, or check the internal storage is mounted.")
+        row("bad", "No drives mounted under /media or /nvme", "Insert a USB drive or SD card, or check the internal storage is mounted.")
         problems += 1
     for d in drives:
         exists, plugins = list_plugins(ctx.remote, d)
@@ -1366,7 +1415,7 @@ def main(argv=None):
             st.done("%d found" % len(drives))
         if not drives:
             fail_panel("No drives found", [
-                "The MPC has nothing mounted under /media.",
+                "The MPC has nothing mounted under /media (or /nvme).",
                 "Insert a USB drive or SD card (formatted FAT32 / exFAT / ext4) and run this again.",
             ], "warn")
             return EXIT_SETUP
