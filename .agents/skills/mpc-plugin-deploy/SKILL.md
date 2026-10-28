@@ -34,6 +34,7 @@ python3 tools/mpc_remote.py <ip> list                    [--drive N]
 python3 tools/mpc_remote.py <ip> add plugins/<Name>      # an SDK project (its build/ output) ...
 python3 tools/mpc_remote.py <ip> add some-plugin.zip     # ... or a zip from the package tool / a download
 python3 tools/mpc_remote.py <ip> update plugins/<Name>   # replace an installed copy, no question asked
+python3 tools/mpc_remote.py <ip> import <release>.zip [<aarch64>.zip] --out converted --zip   # convert a community mpc-vst-plugins package (needs no hacked MPC OS), save it, then add it
 python3 tools/mpc_remote.py <ip> remove "<folder or name>" --yes
 python3 tools/mpc_remote.py <ip> export <name> | --all --out <dir>    # always written as zip files
 ```
@@ -50,6 +51,8 @@ Add `--no-color` when output is captured. Exit codes: 0 ok, 1 an operation faile
 4. Tell the user what to do on the MPC: the plugin is under **External VST Plugins** in the plugin browser; remove and re-add it on a track that already uses it (or restart the MPC if the skins changed). If a new or changed plugin does not show, offer the `restart` command (after warning about unsaved data), then `doctor` and the Enhancements switches.
 
 ## Restarting the MPC app
+
+`import` takes zips or folders from the community plugin store (https://sd88me.github.io/mpc-vst-plugins/, made for a modified MPC OS) and rewrites them into the SDK folder format with `tools/legacy_convert.py` (also usable alone, no MPC needed). Give the armv7 and aarch64 zips of one plugin together to get one folder that works on every model. The converted folder (and a zip with `--zip`) is saved to `--out` for redistribution, and installing it asks the same questions as `add`. The plugin binaries are not modified; mention the plugin's licence (recorded in `plugin.json`) before redistributing, and that a plugin written for the modified OS may rely on features the stock host lacks, so test it.
 
 `restart` restarts the MPC application service (`acvs`) so it rescans VST2 plugins; it needs no drive. **Any unsaved project data on the MPC is lost**, so never run it (or pass `--yes`) without the user explicitly agreeing, and remind them to save first. Only suggest it when a newly added plugin does not show up; it is not needed for every install.
 

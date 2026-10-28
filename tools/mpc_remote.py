@@ -12,6 +12,7 @@ The MPC's address can also be given as --address ADDRESS (or the MPC_ADDRESS env
     mpc_remote.py 192.168.1.50 add plugins/MySynth   an SDK project (uses its build/ output) ...
     mpc_remote.py 192.168.1.50 add Wobble-1.0-mpc.zip              ... or a downloaded zip
     mpc_remote.py 192.168.1.50 update plugins/MySynth              replace an installed plugin
+    mpc_remote.py 192.168.1.50 import Acid-2.1.0-mpc-armv7.zip     convert a community (mpc-vst-plugins) package, then add it
     mpc_remote.py 192.168.1.50 remove "Acme - VST - Wobble"
     mpc_remote.py 192.168.1.50 export --all --out ~/Backups        always written as zip files
     mpc_remote.py 192.168.1.50 doctor                check the MPC is set up correctly
@@ -68,7 +69,7 @@ MAX_ZIP_BYTES = 1 << 30
 MPC_SERVICE = "acvs"  # the systemd unit that runs the MPC application
 
 EXIT_OK, EXIT_FAIL, EXIT_SETUP = 0, 1, 2
-COMMANDS = ("info", "drives", "list", "doctor", "restart", "add", "update", "remove", "export")
+COMMANDS = ("info", "drives", "list", "doctor", "restart", "add", "update", "import", "remove", "export")
 
 # ----------------------------------------------------------------------------------------------
 # Terminal styling
@@ -1358,6 +1359,29 @@ def action_add(ctx, sources, replace=False):
     return all_ok
 
 
+def action_convert(sources, out_dir, make_zip, force):
+    """Convert community mpc-vst-plugins packages into SDK plugin folders saved in out_dir.
+    Returns the converted folders (ready for action_add), or None on failure."""
+    import legacy_convert
+    say()
+    with Step("Converting %d package%s" % (len(sources), "" if len(sources) == 1 else "s")) as st:
+        try:
+            results = legacy_convert.convert(sources, out_dir, make_zip, force)
+        except legacy_convert.ConvertError as e:
+            st.fail(str(e))
+            return None
+        st.done("%d plugin%s" % (len(results), "" if len(results) == 1 else "s"))
+    for r in results:
+        m = r["manifest"]
+        say("  %s %s %s  %s" % (S.good(S.ok), S.bold(m["name"]), m["version"], S.dim("saved to " + r["folder"])))
+        if r["zip"]:
+            say("    %s %s" % (S.dim(S.arrow), S.dim(r["zip"])))
+        for w in r["warnings"]:
+            say("    %s %s" % (S.warnc(S.warn), w))
+    say()
+    return [r["folder"] for r in results]
+
+
 def action_remove(ctx, names):
     if not require_writable(ctx):
         return False
@@ -1631,6 +1655,12 @@ def build_parser():
     a.add_argument("sources", nargs="*")
     u = sub.add_parser("update", parents=[common], help="install, replacing any existing copy without asking")
     u.add_argument("sources", nargs="*")
+    i = sub.add_parser("import", parents=[common], help="convert community mpc-vst-plugins packages to the SDK format, then install them")
+    i.add_argument("sources", nargs="+", help="release zip(s) or folder(s); give the armv7 and aarch64 zips of one plugin together")
+    i.add_argument("--out", default="converted", help="folder to save the converted plugins in (default ./converted)")
+    i.add_argument("--zip", action="store_true", help="also save a zip with INSTALL.txt for sharing")
+    i.add_argument("--replace", action="store_true", help="replace an installed copy without asking")
+    i.add_argument("--force", action="store_true", help="overwrite converted folders that already exist in --out")
     r = sub.add_parser("remove", parents=[common], help="delete installed plugins")
     r.add_argument("names", nargs="*")
     e = sub.add_parser("export", parents=[common], help="save installed plugins from the MPC as zip files")
@@ -1659,6 +1689,11 @@ def main(argv=None):
             return EXIT_USAGE_ERR
         host = ask("MPC IP address")
         if not host:
+            return EXIT_FAIL
+    converted = None
+    if args.command == "import":  # converting needs no MPC, so do it first and keep the result even if the upload fails
+        converted = action_convert(args.sources, args.out, args.zip, args.force)
+        if converted is None:
             return EXIT_FAIL
     password = args.password if args.password is not None else os.environ.get("MPC_SSH_PASSWORD")
     remote = Remote(host, args.user, args.port, password)
@@ -1705,6 +1740,8 @@ def main(argv=None):
             return EXIT_OK
         if cmd == "doctor":
             return EXIT_OK if action_doctor(ctx, drives) else EXIT_SETUP
+        if cmd == "import":
+            return EXIT_OK if action_add(ctx, converted, replace=args.replace) else EXIT_FAIL
         if cmd in ("add", "update"):
             return EXIT_OK if action_add(ctx, args.sources, replace=(cmd == "update")) else EXIT_FAIL
         if cmd == "remove":
