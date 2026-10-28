@@ -449,8 +449,9 @@ def explain(err, host, port, has_password):
 # ----------------------------------------------------------------------------------------------
 
 class Remote:
-    def __init__(self, host, user="root", port=22, password=None):
+    def __init__(self, host, user="root", port=22, password=None, alive_count=4):
         self.host = host
+        self.alive_count = alive_count  # unanswered 15 s keepalives before ssh gives up on the link
         self.user = user
         self.port = port
         self.password = password
@@ -489,7 +490,7 @@ class Remote:
         cmd = [self.ssh, "-p", str(self.port),
                "-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=" + null,
                "-o", "LogLevel=ERROR", "-o", "ConnectTimeout=8",
-               "-o", "ServerAliveInterval=15", "-o", "ServerAliveCountMax=4",
+               "-o", "ServerAliveInterval=15", "-o", "ServerAliveCountMax=%d" % self.alive_count,
                "-o", "NumberOfPasswordPrompts=1"]
         if self.password is None:
             cmd += ["-o", "BatchMode=yes"]

@@ -197,7 +197,9 @@ def main(argv=None):
             say("  %s %s" % (S.warnc(S.warn), "That file does not end in .img; check it is the right one."))
 
     password = args.password if args.password is not None else os.environ.get("MPC_SSH_PASSWORD")
-    remote = Remote(host, args.user, args.port, password)
+    # A big image keeps the MPC busy writing to flash and it can stop answering ssh keepalives for a while;
+    # the default (about a minute of silence) then drops the transfer with a timeout. Allow 20 minutes.
+    remote = Remote(host, args.user, args.port, password, alive_count=80)
     remote_file = None
     try:
         try:
