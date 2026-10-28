@@ -8,16 +8,15 @@ Usage:
 
 The MPC's address can also be given as --address ADDRESS (or the MPC_ADDRESS environment variable).
 
-With an image file the tool copies it (scp) into temporary space on the MPC and runs
-    az01-update --file <copied image>
+With an image file the tool copies it (scp) to /data/az01-update.img on the MPC and runs
+    az01-update --file /data/az01-update.img
 With --net it runs
     az01-update --net <URL>
 and nothing is copied.
 
 Options:
     --net URL       download URL for the update; handed to az01-update --net
-    --usb           reboot the MPC into USB update mode (runs `reboot loader` on arm32 or `reboot recovery` on arm64 over SSH)
-    --tmp-dir DIR   where on the MPC to put the image (default /tmp)
+    --usb           reboot the MPC into USB update mode (runs `reboot loader` on arm32 or `reboot update` on arm64 over SSH)
     --keep          do not delete the copied image afterwards
     --password PW   SSH password if the MPC needs one (or set MPC_SSH_PASSWORD)
     --user NAME     SSH user (default root)
@@ -44,8 +43,9 @@ from mpc_remote import (EXIT_FAIL, EXIT_OK, EXIT_SETUP, Remote, S, SshError, Ste
                         fail_panel, human_size, info_rows, interactive, panel, say)
 
 UPDATER = "az01-update"
+REMOTE_IMAGE = "/data/az01-update.img"  # where the image is put on the MPC (/tmp is too small)
 # the command that puts the MPC into USB update mode depends on its processor
-USB_MODE_CMDS = {"arm32": "reboot loader", "arm64": "reboot recovery"}
+USB_MODE_CMDS = {"arm32": "reboot loader", "arm64": "reboot update"}
 SSH_LOST = 255  # ssh's own exit status when the connection fails or drops
 
 
@@ -111,7 +111,7 @@ def free_kb(remote, directory):
 
 
 def action_usb(remote, host, info, assume_yes):
-    """Reboot the MPC into USB update mode: `reboot loader` on arm32 devices, `reboot recovery` on arm64."""
+    """Reboot the MPC into USB update mode: `reboot loader` on arm32 devices, `reboot update` on arm64."""
     arch = mr.device_arch(info)
     cmd = USB_MODE_CMDS.get(arch)
     if not cmd:
@@ -150,8 +150,7 @@ def build_parser():
                    help="IP address or name of the MPC (or set MPC_ADDRESS)")
     p.add_argument("image", nargs="?", metavar="IMAGE", help="firmware update image (.img) to copy to the MPC")
     p.add_argument("--net", metavar="URL", help="download URL for the update, passed to az01-update --net")
-    p.add_argument("--usb", action="store_true", help="reboot the MPC into USB update mode (`reboot loader` on arm32, `reboot recovery` on arm64)")
-    p.add_argument("--tmp-dir", default="/tmp", help="temporary folder on the MPC for the image (default /tmp)")
+    p.add_argument("--usb", action="store_true", help="reboot the MPC into USB update mode (`reboot loader` on arm32, `reboot update` on arm64)")
     p.add_argument("--keep", action="store_true", help="leave the copied image on the MPC")
     p.add_argument("--password", help="SSH password if needed (or set MPC_SSH_PASSWORD)")
     p.add_argument("--user", default="root", help="SSH user (default root)")
@@ -230,7 +229,7 @@ def main(argv=None):
 
         if image:
             size = os.path.getsize(image)
-            tmpdir = args.tmp_dir.rstrip("/") or "/"
+            tmpdir = os.path.dirname(REMOTE_IMAGE)
             with Step("Checking space in %s" % tmpdir) as st:
                 free = free_kb(remote, tmpdir)
                 if free is None:
@@ -239,12 +238,12 @@ def main(argv=None):
                     st.fail("%s free, image is %s" % (human_size(free * 1024), human_size(size)))
                     fail_panel("Not enough temporary space", [
                         "%s on the MPC has %s free but the image needs %s." % (tmpdir, human_size(free * 1024), human_size(size)),
-                        "Try another folder with  --tmp-dir  (for example one on a drive under /media).",
+                        "Free some space on the MPC's internal storage and try again.",
                     ], "warn")
                     return EXIT_FAIL
                 else:
                     st.done("%s free, image is %s" % (human_size(free * 1024), human_size(size)))
-            remote_file = "%s/%s" % (tmpdir if tmpdir != "/" else "", "mpc-update-%d.img" % os.getpid())
+            remote_file = REMOTE_IMAGE
             update_args = "--file %s" % shlex.quote(remote_file)
             what = "%s (%s)" % (os.path.basename(image), human_size(size))
         else:
@@ -282,7 +281,7 @@ def main(argv=None):
                 "The MPC dropped the connection. That is normal if it is restarting to finish the update.",
                 "Leave it alone for a few minutes; it must not be switched off while it updates.",
             ], "warn")
-            remote_file = None  # /tmp does not survive a reboot, and we cannot reach it now
+            remote_file = None  # we cannot reach the MPC to tidy up now
             return EXIT_OK
         if rc != 0:
             fail_panel("%s failed" % UPDATER, ["It exited with status %d. See its output above." % rc])
