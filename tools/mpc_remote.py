@@ -1200,6 +1200,16 @@ def action_list(ctx):
     return plugins
 
 
+def drive_free(remote, drive):
+    """Bytes free on a drive right now (asked again, as the figure from discovery goes stale). None if unknown."""
+    rc, out, err = remote.text("df -Pk %s | tail -n 1" % shlex.quote(drive.mount))
+    try:
+        drive.free = int(out.split()[3]) * 1024
+    except (IndexError, ValueError):
+        pass
+    return drive.free
+
+
 def install(ctx, lp, replace):
     """Copy one plugin to the MPC. Returns True on success."""
     d = ctx.drive
@@ -1219,9 +1229,20 @@ def install(ctx, lp, replace):
             ctx.arch, lp.folder, "/".join(sorted(lp.builds)) or "nothing usable")))
         return False
     data, sizes = build_tar(lp)
-    if d.free is not None and len(data) * 2 > d.free:
-        say("  %s %s" % (S.badc(S.bad), "Not enough space on %s (%s free, plugin is %s)." % (d.name, human_size(d.free), human_size(len(data)))))
-        return False
+    # The plugin is streamed as a tar and unpacked straight into a staging folder on the drive, so no zip
+    # is ever copied over. While it is staged any old copy still occupies its space, so the whole new
+    # plugin (plus filesystem block rounding) must fit in what is free right now.
+    need = len(data) + 4096 * (len(sizes) + 1) + (1 << 20)
+    with Step("Checking space on %s" % d.name) as st:
+        free = drive_free(ctx.remote, d)
+        if free is None:
+            st.warn("could not tell; carrying on")
+        elif free < need:
+            st.fail("%s free, needs %s" % (human_size(free), human_size(need)))
+            say("  %s %s" % (S.badc(S.bad), "Not enough space on %s to unpack %s. Free some space or choose another drive (--drive)." % (d.name, name)))
+            return False
+        else:
+            st.done("%s free, needs about %s" % (human_size(free), human_size(need)))
 
     exists, plugins = list_plugins(ctx.remote, d)
     present = any(p.folder == name for p in plugins)
