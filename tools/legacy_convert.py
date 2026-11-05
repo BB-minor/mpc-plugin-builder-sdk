@@ -40,7 +40,6 @@ JUNK_NAMES = {".DS_Store", "Thumbs.db", "desktop.ini"}
 LEGACY_ONLY = {"plugin-meta.xml", "mpc-plugin.json"}  # packaging files of the old installer, not part of the plugin
 ARCH_BY_MACHINE = {0x28: "arm32", 0xB7: "arm64"}
 ARCH_KEY = {"arm32": "file32", "arm64": "file64"}
-MAX_UNZIPPED = 1 << 30
 
 
 class ConvertError(Exception):
@@ -56,14 +55,12 @@ def make_slug(name):
 
 
 def safe_extract(zpath, dest):
-    """Unpack a zip, refusing anything that would land outside dest or expand absurdly."""
+    """Unpack a zip, refusing anything that would land outside dest."""
     try:
         z = zipfile.ZipFile(zpath)
     except zipfile.BadZipFile:
         raise ConvertError("%s is not a valid zip file" % zpath)
     with z:
-        if sum(i.file_size for i in z.infolist()) > MAX_UNZIPPED:
-            raise ConvertError("%s expands to more than 1 GB; refusing to unpack it" % zpath)
         base = os.path.realpath(dest)
         for info in z.infolist():
             target = os.path.realpath(os.path.join(dest, info.filename))

@@ -65,7 +65,6 @@ CPU_PARTS = {  # ARM "CPU part" ids as shown in /proc/cpuinfo
     "0xd09": "Cortex-A73", "0xd0a": "Cortex-A75", "0xd0b": "Cortex-A76", "0xd0d": "Cortex-A77",
 }
 JUNK_NAMES = {".DS_Store", "Thumbs.db", "desktop.ini"}
-MAX_ZIP_BYTES = 1 << 30
 MPC_SERVICE = "acvs"  # the systemd unit that runs the MPC application
 
 EXIT_OK, EXIT_FAIL, EXIT_SETUP = 0, 1, 2
@@ -1087,9 +1086,6 @@ def find_candidates(cwd=None, extra_roots=()):
 
 def extract_zip(zpath, dest):
     with zipfile.ZipFile(zpath) as z:
-        total = sum(i.file_size for i in z.infolist())
-        if total > MAX_ZIP_BYTES:
-            raise UsageError("%s expands to %s, which is too big for a plugin" % (zpath, human_size(total)))
         base = os.path.realpath(dest)
         for info in z.infolist():
             target = os.path.realpath(os.path.join(dest, info.filename))
