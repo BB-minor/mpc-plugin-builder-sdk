@@ -1,6 +1,13 @@
-# MPC Plugin SDK
+MPC Plugin SDK
+==============
+![Akai Professional](docs/akaipro.png)
 
-Build instrument and effect plugins for Akai MPC standalone hardware from a plain-language description, with an AI coding agent, in C++ you never have to read if you do not want to.
+This SDK allows you to build instrument and effect plugins for Akai MPC standalone hardware from a plain-language description using an AI coding agent, and install it directly onto your MPC. It writes C++ that you never have to read if you do not want to.
+
+The plugins can run on MPC X, X SE, Live, Live II, One, One+, Key 61, Key 37, Force (32-bit) and MPC Live III, MPC XL and later (64-bit).
+
+**Plugin support requires MPC OS 3.10.1 or later, with the VST plugins feature enabled on the device**: Preferences → Enhancements → turn on *Enable Enhancements* and *VST2 Support*.
+
 
 ```
 "Make a tempo-synced tape delay with a feedback filter and a ping-pong switch."
@@ -18,20 +25,16 @@ plugins/TapeDelay/              ──►  python tools/build.py plugins/TapeDel
                                      MPC: Preferences → Enhancements (Beta) → VST2 Support
 ```
 
-Runs on MPC X, X SE, Live, Live II, One, One+, Key 61, Key 37, Force (32-bit) and MPC Live III, MPC XL and later (64-bit).
-
-**Requires MPC OS 3.10.1 or later, with VST plugins enabled on the device**: Preferences → Enhancements (Beta) → turn on *Enable Enhancements* and *VST2 Support*. Earlier firmware ignores the `VST2 Plugins` folder entirely, and with the setting off the plugins stay hidden.
-
 ## Start here
 
-- **[GETTING_STARTED.md](GETTING_STARTED.md)**: clone, build an example, put it on your MPC, then describe your own plugin.
+- See **[GETTING_STARTED.md](GETTING_STARTED.md)**: clone this repo, build an example, put it on your MPC, then describe your own plugin.
 - Point Claude Code or Codex at this folder. `AGENTS.md` and the skills in `.claude/skills/` / `.agents/skills/` teach the agent the whole workflow.
 
 ## Example prompts
 
-Paste one of these into your agent with the SDK folder open:
+Paste one of these prompts into your agent with the SDK folder open:
 
-> Create an MPC instrument called "Dune Bass": a monophonic bass synth with saw and square oscillators, sub oscillator, a resonant low-pass filter with envelope amount, glide, and a drive stage. Put oscillator controls on page one and filter/envelope on page two. Add 8 presets ranging from clean sub to aggressive acid.
+> Create an MPC instrument called "Dune Bass": a monophonic bass synth with saw and square oscillators, sub oscillator, a resonant low-pass filter with envelope amount, glide, and a drive stage. Put oscillator controls on page one and filter/envelope on page two. Add 8 presets ranging from clean sub to aggressive acid. When built, install it on my MPC and restart the device so plugins are rescanned.
 
 > Build an MPC effect called "Shimmer": a reverb with an octave-up pitch-shifted feedback path, pre-delay, damping, size, mix. Keep CPU low enough for two instances on an MPC Live II.
 
@@ -41,7 +44,7 @@ Paste one of these into your agent with the SDK folder open:
 
 > Port the DSP from this open-source filter I pasted into an MPC effect with cutoff, resonance, drive and mode (LP/BP/HP) controls. Credit the original author and licence in the README.
 
-> My plugin "Dune Bass" makes a click when I load a project. Find out why and fix it.
+> My plugin "Dune Bass" makes a click when I load a project. Find out why and fix it. When you're done, update the plugin on my MPC.
 
 ## What is in the box
 
@@ -72,4 +75,4 @@ Third-party plugins run inside the MPC application without protection. A bug can
 
 ## Licence
 
-MIT. Contains no Steinberg VST SDK code and no MPC firmware files. "VST" is a trademark of Steinberg Media Technologies GmbH. See `LICENSE` and `docs/faq-and-legal.md`.
+MIT. Contains no Steinberg VST SDK code. "VST" is a trademark of Steinberg Media Technologies GmbH. See `LICENSE` and `docs/faq-and-legal.md`.
