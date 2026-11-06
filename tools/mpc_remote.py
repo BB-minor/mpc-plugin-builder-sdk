@@ -27,7 +27,7 @@ Options:
     --no-color      plain output (also honours NO_COLOR)
 
 The MPC must be on your network with developer mode on (that is what starts its SSH server) and
-VST2 Support enabled. Everything this tool writes lives inside the "VST2 Plugins" folder of the drive
+External Plugin Support enabled. Everything this tool writes lives inside the "VST2 Plugins" folder of the drive
 you pick (plus one short-lived hidden staging folder at the drive root); it never touches system files.
 
 It uses your computer's `ssh` command and streams tar archives over it, so nothing but OpenSSH is
@@ -380,7 +380,7 @@ def setup_steps():
     return [
         S.bold("1. Update the MPC") + " to MPC OS 3.10.1 or later (Preferences → Info shows the version).",
         S.bold("2. Enable the beta features:") + " Preferences → Enhancements (Beta) →",
-        "     turn on " + S.cyan("Enable Enhancements") + " and then " + S.cyan("VST2 Support") + " (read the warning).",
+        "     turn on " + S.cyan("Enable Enhancements") + " and then " + S.cyan("External Plugin Support") + " (read the warning).",
         S.bold("3. Switch on developer mode:") + " Preferences → Info. Tap the version value 3 times,",
         "     then the serial number value 2 times, then the firmware version once.",
         "     Developer mode starts the MPC's SSH server.",
@@ -1290,8 +1290,8 @@ def post_install_notes(ctx):
     if ctx.drive.noexec:
         notes.append(S.warnc(S.warn) + " " + ctx.drive.name + " is mounted noexec: the MPC may refuse to load plugins from it. "
                      "If the plugin does not appear, try the internal drive.")
-    notes.append(S.dim(S.info) + " On the MPC: Preferences → Enhancements (Beta) → Enable Enhancements + VST2 Support must be on.")
-    notes.append(S.dim(S.info) + " Then open a plugin browser: it is listed under External VST Plugins. "
+    notes.append(S.dim(S.info) + " On the MPC: Preferences → Enhancements (Beta) → Enable Enhancements + External Plugin Support must be on.")
+    notes.append(S.dim(S.info) + " Then open a plugin browser: it is listed under External Plugins. "
                  "If it was already loaded on a track, remove and re-add it (or restart the MPC).")
     say()
     for n in notes:
@@ -1521,7 +1521,7 @@ def action_restart(ctx, after_install=False):
             st.fail("service is '%s'; check the MPC screen" % (state or "unknown"))
             return False
         st.done("running again")
-    say("  %s %s" % (S.dim(S.info), "The MPC takes a little longer to finish loading. Your plugins appear under External VST Plugins."))
+    say("  %s %s" % (S.dim(S.info), "The MPC takes a little longer to finish loading. Your plugins appear under External Plugins."))
     say()
     return True
 
@@ -1567,8 +1567,8 @@ def action_doctor(ctx, drives):
             notes.append("under 20 MB free")
         notes.append("%s folder %s" % (PLUGINS_DIR, ("with %d plugin%s" % (len(plugins), "" if len(plugins) == 1 else "s")) if exists else "not created yet"))
         row(state, "%s: %s" % (d.name, ", ".join(notes)))
-    row("warn", "Enhancements and VST2 Support switches cannot be read remotely",
-        "On the MPC: Preferences → Enhancements (Beta) → Enable Enhancements, then VST2 Support.")
+    row("warn", "Enhancements and External Plugin Support switches cannot be read remotely",
+        "On the MPC: Preferences → Enhancements (Beta) → Enable Enhancements, then External Plugin Support.")
     say()
     panel("MPC health check", rows, "bad" if problems else "good")
     say()

@@ -23,8 +23,8 @@ The `test` command fails on NaN/infinite output, crashes, and state that does no
 1. Build: `python tools/build.py plugins/MyPlugin`.
 2. Copy the whole folder `build/<Manufacturer> - VST - <Name>/` into a folder named exactly `VST2 Plugins` at the root of a USB drive or SD card (create `VST2 Plugins` if it does not exist). You can also copy it to the MPC's internal drive over USB in computer mode, or with the MPC's file browser from a drive.
 3. Insert the drive in the MPC.
-4. On the MPC (must be running MPC OS 3.10.1 or later; check Preferences → Info and update if older): **Preferences → Enhancements (Beta)**: turn on **Enable Enhancements** and **VST2 Support**. Read the warning. The plugin stays hidden until both switches are on.
-5. Open the plugin browser (instrument track → plugin program → browse, or an insert slot). Your plugin is listed under **External VST Plugins**.
+4. On the MPC (must be running MPC OS 3.10.1 or later; check Preferences → Info and update if older): **Preferences → Enhancements (Beta)**: turn on **Enable Enhancements** and **External Plugin Support**. Read the warning. The plugin stays hidden until both switches are on.
+5. Open the plugin browser (instrument track → plugin program → browse, or an insert slot). Your plugin is listed under **External Plugins**.
 
 Replacing a plugin: copy the new folder over the old one, then remove and re-add the plugin on the track (or restart the MPC if the skins changed).
 
@@ -39,7 +39,7 @@ python3 tools/mpc_remote.py 192.168.1.50 add some-plugin.zip
 python3 tools/mpc_remote.py 192.168.1.50 export --all --out ~/mpc-backup
 ```
 
-It needs the setup from step 4 above (MPC OS 3.10.1+, Enable Enhancements, VST2 Support) plus **developer mode**, which starts the MPC's SSH server: Preferences → Info, tap the version value 3 times, the serial number value 2 times, the firmware version once. Run `python3 tools/mpc_remote.py <ip> doctor` if it will not connect; it explains what is missing. It only writes inside the `VST2 Plugins` folder of the drive you choose. Switch developer mode off again when you are done on a network you do not control. With Claude Code or Codex, just ask: "install this on my MPC at 192.168.1.50".
+It needs the setup from step 4 above (MPC OS 3.10.1+, Enable Enhancements, External Plugin Support) plus **developer mode**, which starts the MPC's SSH server: Preferences → Info, tap the version value 3 times, the serial number value 2 times, the firmware version once. Run `python3 tools/mpc_remote.py <ip> doctor` if it will not connect; it explains what is missing. It only writes inside the `VST2 Plugins` folder of the drive you choose. Switch developer mode off again when you are done on a network you do not control. With Claude Code or Codex, just ask: "install this on my MPC at 192.168.1.50".
 
 ## 3. Check the UI
 

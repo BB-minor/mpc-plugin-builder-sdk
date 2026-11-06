@@ -43,7 +43,7 @@ The report says which phase. Crashes in `prepare` are usually buffers sized from
 
 **The plugin does not appear in the browser**
 - Is the MPC on MPC OS 3.10.1 or later? Earlier firmware ignores the `VST2 Plugins` folder; check Preferences → Info.
-- Is `VST2 Support` switched on under Preferences → Enhancements (Beta)? Both the master switch and the VST2 switch must be on.
+- Is `External Plugin Support` switched on under Preferences → Enhancements (Beta)? Both the master switch and the External Plugin Support switch must be on.
 - Is the folder inside a folder named exactly `VST2 Plugins` at the root of the drive?
 - Is `plugin.json` valid JSON with a `name` and the right `file32`/`file64` for this MPC? A 32-bit MPC needs `file32`.
 - Is `numOutputs` greater than 0?

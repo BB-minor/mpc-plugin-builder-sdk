@@ -1,6 +1,6 @@
 ---
 name: mpc-plugin-deploy
-description: Install, list, update, remove or export VST2 plugins on a real Akai MPC over the network (SSH, developer mode) with tools/mpc_remote.py, and walk the user through setting the MPC up (Enhancements, VST2 Support, developer mode). Use when the user wants a plugin put on their MPC automatically, gives an MPC IP address, or asks to back up or manage plugins on the device.
+description: Install, list, update, remove or export VST2 plugins on a real Akai MPC over the network (SSH, developer mode) with tools/mpc_remote.py, and walk the user through setting the MPC up (Enhancements, External Plugin Support, developer mode). Use when the user wants a plugin put on their MPC automatically, gives an MPC IP address, or asks to back up or manage plugins on the device.
 ---
 
 # Deploy to an MPC over the network
@@ -12,7 +12,7 @@ description: Install, list, update, remove or export VST2 plugins on a real Akai
 Check these with the user before connecting (the script also diagnoses them, but the user has to do them on the device):
 
 1. MPC OS **3.10.1 or later** (Preferences → Info).
-2. **Preferences → Enhancements (Beta)**: turn on **Enable Enhancements**, then **VST2 Support**. Read the warning with them.
+2. **Preferences → Enhancements (Beta)**: turn on **Enable Enhancements**, then **External Plugin Support**. Read the warning with them.
 3. **Developer mode** on: Preferences → Info; tap the version value 3 times, the serial number value 2 times, then the firmware version once. This starts the MPC's SSH server. (If it does not seem to work, ask the user to describe what the Info page shows.)
 4. The MPC and the computer on the same network. The MPC's IP address is in Preferences, on the Wi-Fi tab (hold Shift to access it) or on the Ethernet tab, depending on how it is connected.
 
@@ -48,7 +48,7 @@ Add `--no-color` when output is captured. Exit codes: 0 ok, 1 an operation faile
 1. Make sure the plugin is built and tested (`mpc-plugin-build`, `mpc-plugin-test`): `plugins/<Name>/build/` must hold the `"<Manufacturer> - VST - <Name>"` folder. Never deploy something that has not passed the build and `host_sim` checks.
 2. Run `info` (or `doctor`) to confirm the connection and pick the drive.
 3. `add plugins/<Name> --drive <d>` (first time) or `update plugins/<Name> --drive <d>` (new build). The tool checks that the ARM build matching the MPC's processor is present, copies via a hidden staging folder, verifies every file size, and keeps the previous version until the new one has arrived intact.
-4. After every successful `add`, `update` or `import`, tell the user the MPC only scans for VST2 plugins when its app starts, so the plugin will not appear until it is restarted. **Suggest the restart** and offer to do it with `restart` (see below); remind them to save their project first and only run it once they agree. They can also restart by powering the MPC off and on. Then tell them the plugin is under **External VST Plugins** in the plugin browser; for a track that already uses an updated plugin, remove and re-add it (a restart also picks up changed skins). If it still does not show after the restart, run `doctor` and check the Enhancements switches.
+4. After every successful `add`, `update` or `import`, tell the user the MPC only scans for VST2 plugins when its app starts, so the plugin will not appear until it is restarted. **Suggest the restart** and offer to do it with `restart` (see below); remind them to save their project first and only run it once they agree. They can also restart by powering the MPC off and on. Then tell them the plugin is under **External Plugins** in the plugin browser; for a track that already uses an updated plugin, remove and re-add it (a restart also picks up changed skins). If it still does not show after the restart, run `doctor` and check the Enhancements switches.
 
 ## Restarting the MPC app
 
@@ -68,7 +68,7 @@ Read the panel the script prints; it names the cause:
 | "No drives found" | Nothing mounted under /media | Insert a USB drive / SD card, check the internal storage |
 | "read-only" | The drive is write protected or mounted read-only | Another drive, or the card's lock switch |
 
-Remember `doctor` cannot read the Enhancements / VST2 Support switches remotely; if everything installs fine but the plugin never appears in the browser, those switches (and MPC OS 3.10.1+) are the first thing to check. Then `mpc-plugin-troubleshoot`.
+Remember `doctor` cannot read the Enhancements / External Plugin Support switches remotely; if everything installs fine but the plugin never appears in the browser, those switches (and MPC OS 3.10.1+) are the first thing to check. Then `mpc-plugin-troubleshoot`.
 
 ## What the tool does not do
 

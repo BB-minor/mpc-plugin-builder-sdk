@@ -69,10 +69,10 @@ def install_text(manifest, folder):
     lines.append("   Keep the folder name exactly as it is - the MPC uses it to find the plugin.")
     lines.append("")
     lines.append("2. On the MPC, open   Preferences > Enhancements (Beta)   and switch on both")
-    lines.append('   "Enable Enhancements" and "VST2 Support". Plug in the drive (or restart the MPC if the')
+    lines.append('   "Enable Enhancements" and "External Plugin Support". Plug in the drive (or restart the MPC if the')
     lines.append("   plugin does not appear).")
     lines.append("")
-    lines.append('3. The plugin now appears in the plugin browser under   "External VST Plugins".')
+    lines.append('3. The plugin now appears in the plugin browser under   "External Plugins".')
     if kind == "instrument":
         lines.append("   Create a Plugin program and pick it from the list - then play it from the pads or a keyboard.")
     elif kind == "effect":
@@ -96,8 +96,8 @@ def install_text(manifest, folder):
     lines.append("  have tested them thoroughly.")
     lines.append("* Requires MPC OS 3.10.1 or later. Older MPC OS versions ignore this folder entirely;")
     lines.append("  update the MPC first (Preferences > Info shows the version).")
-    lines.append("* VST plugins must be enabled on the device: Preferences > Enhancements (Beta) >")
-    lines.append("  Enable Enhancements and VST2 Support. Until both are on, the plugin stays hidden.")
+    lines.append("* External plugins must be enabled on the device: Preferences > Enhancements (Beta) >")
+    lines.append("  Enable Enhancements and External Plugin Support. Until both are on, the plugin stays hidden.")
     lines.append("* If the MPC crashes or the plugin never appears, remove the folder from \"VST2 Plugins\"")
     lines.append("  and restart the MPC.")
     lines.append("")

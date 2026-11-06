@@ -6,7 +6,7 @@ This SDK allows you to build instrument and effect plugins for Akai MPC standalo
 
 The plugins can run on MPC X, X SE, Live, Live II, One, One+, Key 61, Key 37, Force (32-bit) and MPC Live III, MPC XL and later (64-bit).
 
-**Plugin support requires MPC OS 3.10.1 or later, with the VST plugins feature enabled on the device**: Preferences → Enhancements → turn on *Enable Enhancements* and *VST2 Support*.
+**Plugin support requires MPC OS 3.10.1 or later, with the External Plugin Support feature enabled on the device**: Preferences → Enhancements → turn on *Enable Enhancements* and *External Plugin Support*.
 
 
 ```
@@ -22,7 +22,7 @@ plugins/TapeDelay/              ──►  python tools/build.py plugins/TapeDel
                                 └── Plugin Skins/TUI.json  Q-Links.json
                                         │
                                         ▼  copy into  <USB or SD>/VST2 Plugins/
-                                     MPC: Preferences → Enhancements (Beta) → VST2 Support
+                                     MPC: Preferences → Enhancements (Beta) → External Plugin Support
 ```
 
 ## Start here
@@ -63,7 +63,7 @@ Paste one of these prompts into your agent with the SDK folder open:
 
 - Python 3.9 or newer. Everything else (the Zig cross compiler) is fetched on first build, or use your own GNU cross compilers / Docker (`docs/building.md`).
 - macOS, Windows or Linux.
-- An MPC running MPC OS 3.10.1 or later, with VST2 Support enabled in Preferences → Enhancements (Beta), plus a USB drive or SD card.
+- An MPC running MPC OS 3.10.1 or later, with External Plugin Support enabled in Preferences → Enhancements (Beta), plus a USB drive or SD card.
 
 ## How it works, briefly
 
