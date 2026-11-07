@@ -190,7 +190,7 @@ def convert_folder(legacy, out_dir, created):
     if first:
         os.makedirs(dest)
         manifest = {
-            "name": meta["name"], "manufacturer": meta["manufacturer"], "version": meta["version"], "kind": meta["kind"],
+            "name": meta["name"], "manufacturer": meta["manufacturer"], "version": meta["version"], "format": "vst2", "kind": meta["kind"],
             "uid": meta["uid"], "category": meta["category"] or ("Synth" if meta["kind"] == "instrument" else "Effect"),
             "numInputs": meta["numInputs"], "numOutputs": meta["numOutputs"],
         }
@@ -226,7 +226,7 @@ def convert_folder(legacy, out_dir, created):
 
 def finish(dest, manifest, make_zip, out_dir):
     """Write plugin.json (binaries in a stable key order) and optionally the zip. Returns the zip path or None."""
-    ordered = {k: manifest[k] for k in ("name", "manufacturer", "version", "kind", "uid", "category", "numInputs",
+    ordered = {k: manifest[k] for k in ("name", "manufacturer", "version", "format", "kind", "uid", "category", "numInputs",
                                          "numOutputs", "file32", "file64", "description", "license", "url") if k in manifest}
     ordered["convertedFrom"] = "community mpc-vst-plugins package"
     with open(os.path.join(dest, "plugin.json"), "w", encoding="utf-8", newline="\n") as f:

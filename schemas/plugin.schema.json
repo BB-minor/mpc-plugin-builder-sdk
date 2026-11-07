@@ -4,7 +4,7 @@
     "title": "MPC plugin manifest (plugin.json)",
     "description": "Describes one plugin for the Akai MPC standalone host. This file is copied verbatim into the deployable '<manufacturer> - VST - <name>' folder. The MPC matches it against the strings the binary reports, so name, manufacturer and uid must equal PluginInfo.name, PluginInfo.vendor and PluginInfo.uniqueId in the C++ source.",
     "type": "object",
-    "required": ["name", "manufacturer", "version", "kind", "uid", "numInputs", "numOutputs", "file32", "file64"],
+    "required": ["name", "manufacturer", "version", "format", "kind", "uid", "numInputs", "numOutputs", "file32", "file64"],
     "properties": {
         "name": {
             "type": "string",
@@ -21,6 +21,11 @@
             "pattern": "^[0-9]+(\\.[0-9]+){0,3}$",
             "description": "Plugin version such as \"1.0.0\". build.py pads it to four components in version.xml (1.0.0.0) and uses it in the zip name.",
             "examples": ["1.0.0"]
+        },
+        "format": {
+            "type": "string",
+            "enum": ["vst2"],
+            "description": "Plugin format. Currently always \"vst2\"; reserved so other plugin formats can be added later."
         },
         "kind": {
             "type": "string",

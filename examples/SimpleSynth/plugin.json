@@ -2,6 +2,7 @@
   "name": "Simple Synth",
   "manufacturer": "MPC SDK Examples",
   "version": "1.0.0",
+  "format": "vst2",
   "kind": "instrument",
   "uid": "MxSy",
   "numInputs": 0,

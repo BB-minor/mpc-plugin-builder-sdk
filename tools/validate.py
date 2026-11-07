@@ -322,6 +322,8 @@ def check_plugin_json(rep, folder):
     for k in ("name", "manufacturer", "version", "file32", "file64"):
         if k in pj and (not isinstance(pj[k], str) or not pj[k].strip()):
             rep.error('plugin.json "%s" must be a non-empty string' % k)
+    if "format" in pj and pj["format"] != "vst2":
+        rep.warn('plugin.json "format" should be "vst2", got %s' % json.dumps(pj["format"]))
     if "kind" in pj and pj["kind"] not in ("instrument", "effect"):
         rep.error('plugin.json "kind" must be "instrument" or "effect", got %s' % json.dumps(pj["kind"]))
     for k in ("numInputs", "numOutputs"):

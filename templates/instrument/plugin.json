@@ -2,6 +2,7 @@
   "name": "{{NAME}}",
   "manufacturer": "{{VENDOR}}",
   "version": "1.0.0",
+  "format": "vst2",
   "kind": "{{KIND}}",
   "uid": "{{UID}}",
   "numInputs": {{NUM_INPUTS}},

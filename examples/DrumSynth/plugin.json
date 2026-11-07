@@ -2,6 +2,7 @@
   "name": "Drum Synth",
   "manufacturer": "MPC SDK Examples",
   "version": "1.0.0",
+  "format": "vst2",
   "kind": "instrument",
   "uid": "MxDr",
   "numInputs": 0,

@@ -2,6 +2,7 @@
   "name": "Stereo Delay",
   "manufacturer": "MPC SDK Examples",
   "version": "1.0.0",
+  "format": "vst2",
   "kind": "effect",
   "uid": "MxSd",
   "numInputs": 2,

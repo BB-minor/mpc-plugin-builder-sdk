@@ -69,6 +69,7 @@ A JSON object. Unknown keys are ignored, so you may add `description`, `author`,
 | `file32` | see note | string | Path, relative to the plugin folder, of the 32-bit ARM binary. |
 | `file64` | see note | string | Path, relative to the plugin folder, of the 64-bit ARM binary. |
 | `file` | see note | string | Single binary for both. Only used when neither `file32` nor `file64` is present. |
+| `format` | yes | string | Plugin format. Always `"vst2"` for now; the SDK writes it into every `plugin.json` so other formats can be added later. |
 | `kind` | no | `"instrument"` or `"effect"` | Default is instrument. Case-insensitive. |
 | `isInstrument` | no | bool | Overrides `kind` if present. |
 | `numInputs` | no | int | Audio inputs. Default 0. |
@@ -89,6 +90,7 @@ Example:
   "name": "Wobble",
   "manufacturer": "Acme",
   "version": "1.0.0",
+  "format": "vst2",
   "kind": "instrument",
   "uid": "AcWb",
   "category": "Synth",
