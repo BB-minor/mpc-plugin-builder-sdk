@@ -1,0 +1,17 @@
+{
+  "name": "Reason 2 Scream",
+  "manufacturer": "INFUR",
+  "version": "1.0.0",
+  "format": "vst2",
+  "kind": "effect",
+  "uid": "IYkr",
+  "numInputs": 2,
+  "numOutputs": 2,
+  "category": "Effect",
+  "file32": "VST/reason-2-scream-arm32.so",
+  "file64": "VST/reason-2-scream-arm64.so",
+  "description": "Dynamic modal resonator for drum coloration: a parallel bank of four resonant bands with five body types, size, resonance and an input-driven envelope follower that blooms the body on every hit. No distortion - sits after the MPC's own.",
+  "author": "INFUR",
+  "url": "",
+  "license": "MIT"
+}

@@ -1,0 +1,28 @@
+{
+  "kit": "amber",
+  "pages": [
+    {
+      "name": "BODY",
+      "controls": [
+        { "param": "Scale",     "widget": "knob", "polarity": "bipolar" },
+        { "param": "Body Type", "widget": "slider", "overlay": "menu" },
+        "empty",
+        "empty",
+
+        { "param": "Reso",      "widget": "knob" },
+        { "param": "Atk",       "widget": "knob" },
+        "empty",
+        "empty",
+
+        { "param": "Auto",      "widget": "knob" },
+        { "param": "Rel",       "widget": "knob" },
+        "empty",
+        "empty",
+
+        { "param": "Mix",       "widget": "knob" },
+        { "param": "Output",    "widget": "knob", "polarity": "unipolar" }
+      ]
+    }
+  ],
+  "style": { "background": "ff1e1d1e", "text": "ffffffff", "muted": "ff6a6a6c" }
+}
