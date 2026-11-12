@@ -40,6 +40,12 @@ One page, `BODY`. The left column of four is on Q-Link knobs 13/9/5/1 (top to bo
 the leftmost bank), so **Scale, Reso, Auto and Mix** are the four knobs under your hand
 while a loop plays. The second column holds the setup controls.
 
+The colours are taken from the hardware this is modelled on: gold `#cea048` knob arcs on
+a steel-blue `#36536c` panel, with a gold focus ring. The MPC draws its own header and
+function-key strips and those stay dark whatever the plugin asks for, so only the middle
+panel is themed. It is all in `ui.json` (`kit.accent` and `style`), so changing it is a
+one-line edit and a rebuild.
+
 | Control | Range | Default | What it does |
 |---|---|---|---|
 | **Scale** | 0.25× – 4.00× | 1.00× | Body size. Multiplies all four mode frequencies at once. Down = bigger, lower, boomier; up = smaller, tighter, brighter. The knob is centre-detented: 1.00× sits exactly at twelve o'clock. |
@@ -190,11 +196,13 @@ Both test paths pass with zero failures and zero warnings.
 
 ### Known limitations
 
-- **Body Type is a menu, not a 5-way switch.** The SDK's UI kit fits at most 4 captioned
-  segments in a slot (`MAX_SWITCH_CHOICES = 4` in `tools/gen_ui.py`), and there are five
-  body types. It is therefore the MPC's generic value bar with a menu overlay: turn the
-  Q-Link, or double-tap for the list. A hand-written skin could draw a real 5-way
-  switch; this one is generated.
+- **Body Type is a knob, not a captioned 5-way switch.** The SDK's UI kit fits at most 4
+  captioned segments in a slot (`MAX_SWITCH_CHOICES = 4` in `tools/gen_ui.py`), and there
+  are five body types. It is a kit knob with five detents and a menu overlay instead:
+  turn the Q-Link to step through them, or double-tap for the list. The obvious
+  alternative, the MPC's generic value bar, was rejected because the firmware draws it
+  with no colour control, so it would sit on the blue panel as a dark grey rectangle. A
+  hand-written skin could draw a real 5-way switch; this one is generated.
 - **Half the page is empty.** The eight controls occupy the two left-hand columns,
   because `gen_ui.py` banks the Q-Links by column and draws the focus rectangle around a
   full column. Keeping each bank a complete, coherent column of four is what makes the

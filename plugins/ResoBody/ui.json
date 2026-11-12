@@ -1,11 +1,12 @@
 {
-  "kit": "amber",
+  "kit": { "theme": "amber", "accent": "ffcea048" },
+
   "pages": [
     {
       "name": "BODY",
       "controls": [
         { "param": "Scale",     "widget": "knob", "polarity": "bipolar" },
-        { "param": "Body Type", "widget": "slider", "overlay": "menu" },
+        { "param": "Body Type", "widget": "knob", "polarity": "unipolar", "overlay": "menu" },
         "empty",
         "empty",
 
@@ -24,5 +25,11 @@
       ]
     }
   ],
-  "style": { "background": "ff1e1d1e", "text": "ffffffff", "muted": "ff6a6a6c" }
+
+  "style": {
+    "background": "ff36536c",
+    "text": "fff2efe6",
+    "muted": "ffcab58e",
+    "accent": "ffcea048"
+  }
 }
