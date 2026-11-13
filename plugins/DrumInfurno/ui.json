@@ -1,0 +1,78 @@
+{
+  "kit": { "theme": "amber", "accent": "ffe8641e" },
+
+  "pages": [
+    {
+      "name": "DAMAGE",
+      "controls": [
+        { "param": "Drive",   "widget": "knob" },
+        { "param": "Damage",  "widget": "switch" },
+        "empty",
+        "empty",
+
+        { "param": "Shape",   "widget": "knob", "polarity": "bipolar" },
+        { "param": "Mix",     "widget": "knob", "polarity": "unipolar" },
+        "empty",
+        "empty",
+
+        { "param": "Grain",   "widget": "knob", "polarity": "unipolar" },
+        { "param": "Output",  "widget": "knob", "polarity": "unipolar" },
+        "empty",
+        "empty",
+
+        { "param": "Ring",    "widget": "knob", "polarity": "unipolar" },
+        { "param": "Makeup",  "widget": "switch" }
+      ]
+    },
+    {
+      "name": "CUT",
+      "controls": [
+        { "param": "Cut Lo",  "widget": "knob", "polarity": "bipolar" },
+        "empty",
+        "empty",
+        "empty",
+
+        { "param": "Cut Mid", "widget": "knob", "polarity": "bipolar" },
+        "empty",
+        "empty",
+        "empty",
+
+        { "param": "Cut Hi",  "widget": "knob", "polarity": "bipolar" },
+        "empty",
+        "empty",
+        "empty",
+
+        { "param": "Mix",     "widget": "knob", "polarity": "unipolar" }
+      ]
+    },
+    {
+      "name": "BODY",
+      "controls": [
+        { "param": "Chamber", "widget": "knob", "polarity": "unipolar", "overlay": "menu" },
+        { "param": "Rise",    "widget": "knob", "polarity": "unipolar" },
+        "empty",
+        "empty",
+
+        { "param": "Bore",    "widget": "knob", "polarity": "bipolar" },
+        { "param": "Fall",    "widget": "knob", "polarity": "unipolar" },
+        "empty",
+        "empty",
+
+        { "param": "Ring",    "widget": "knob", "polarity": "unipolar" },
+        { "param": "Mix",     "widget": "knob", "polarity": "unipolar" },
+        "empty",
+        "empty",
+
+        { "param": "Bloom",   "widget": "knob", "polarity": "unipolar" },
+        { "param": "Output",  "widget": "knob", "polarity": "unipolar" }
+      ]
+    }
+  ],
+
+  "style": {
+    "background": "ff1f1a18",
+    "text": "fff2e6dc",
+    "muted": "ffa0836f",
+    "accent": "ffe8641e"
+  }
+}

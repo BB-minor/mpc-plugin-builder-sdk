@@ -1,0 +1,17 @@
+{
+  "name": "Drum Infurno",
+  "manufacturer": "INFUR",
+  "version": "1.0.0",
+  "format": "vst2",
+  "kind": "effect",
+  "uid": "ICPO",
+  "numInputs": 2,
+  "numOutputs": 2,
+  "category": "Effect",
+  "file32": "VST/drum-infurno-arm32.so",
+  "file64": "VST/drum-infurno-arm64.so",
+  "description": "Drum coloration unit: Damage (Tube/Tape/Overdrive saturation) into a 3-band Cut EQ into a dynamic modal Body resonator, with slow-RMS auto-makeup and a final safety soft-clip at -0.5 dBFS.",
+  "author": "INFUR",
+  "url": "",
+  "license": "MIT"
+}
