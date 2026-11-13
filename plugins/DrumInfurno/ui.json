@@ -116,7 +116,10 @@
           "widget": "knob",
           "polarity": "unipolar"
         },
-        "empty",
+        {
+          "widget": "text",
+          "text": "Body through-path"
+        },
         "empty",
         {
           "param": "Bore",
@@ -140,7 +143,11 @@
           "widget": "knob",
           "polarity": "unipolar"
         },
-        "empty",
+        {
+          "param": "Core",
+          "widget": "knob",
+          "polarity": "unipolar"
+        },
         "empty",
         {
           "param": "Bloom",

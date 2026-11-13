@@ -106,6 +106,7 @@ public:
         // --- appended in 1.1; never inserted above, that would move every id ---
         kKeepLo,       // Hz  - crossover below which the signal bypasses the chain
         kTame,         // Hz  - ladder lowpass before makeup and the clipper
+        kCore,         // %   - Body through-path: 0 = pure resonator, 100 = broadband
         kNumParams
     };
 
@@ -150,20 +151,21 @@ public:
         addParam(boolParam  ("makeup","Makeup",    true));
         addParam(logParam   ("keeplo","Keep Lo",   20.0f, 250.0f,   20.0f, "Hz", 0));
         addParam(logParam   ("tame",  "Tame",     200.0f, 20000.0f, 20000.0f, "Hz", 0));
+        addParam(floatParam ("core",  "Core",       0.0f, 100.0f,    0.0f, "%", 0));
 
         if (numParams() != kNumParams)
             mpc::log("DrumInfurno: parameter count mismatch (%d vs %d)", numParams(), (int)kNumParams);
 
         // ----- factory programs: plain values, in parameter order -------------
-        //                        out    mix   type drive shape grain  lo    mid    hi  cham  bore  ring  bloom rise   fall  mkp  keepLo   tame
-        addProgram("Init",          {  0.0f, 60.0f, 0.0f,  0.0f,  0.0f,  0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.00f, 45.0f, 35.0f,  3.0f, 150.0f, 1.0f , 20.0f, 20000.0f});
-        addProgram("Tube Weight",   {  0.0f, 70.0f, 0.0f, 45.0f,-25.0f, 40.0f, 2.0f,-1.0f, 0.0f, 0.0f, 0.85f, 55.0f, 35.0f,  5.0f, 220.0f, 1.0f , 20.0f, 20000.0f});
-        addProgram("Tape Glue",     {  0.0f, 65.0f, 1.0f, 35.0f,-40.0f, 55.0f, 1.0f, 0.0f,-2.0f, 1.0f, 1.00f, 40.0f, 45.0f,  6.0f, 250.0f, 1.0f , 20.0f,  9000.0f});
-        addProgram("Overdrive Snap",{  0.0f, 70.0f, 2.0f, 55.0f, 35.0f, 45.0f,-1.0f, 2.0f, 3.0f, 2.0f, 1.35f, 55.0f, 60.0f,  2.0f, 120.0f, 1.0f , 20.0f, 20000.0f});
-        addProgram("Room Bloom",    { -1.0f, 60.0f, 0.0f, 25.0f,  0.0f, 25.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.00f, 40.0f, 80.0f,  8.0f, 400.0f, 1.0f , 20.0f, 20000.0f});
-        addProgram("Metal Ring",    { -2.0f, 75.0f, 2.0f, 65.0f, 50.0f, 70.0f,-2.0f, 1.0f, 4.0f, 3.0f, 1.80f, 85.0f, 45.0f,  1.5f, 300.0f, 1.0f , 20.0f,  7000.0f});
-        addProgram("808 Furnace",   {  0.0f, 65.0f, 0.0f, 60.0f,-50.0f, 70.0f, 4.0f,-2.0f,-3.0f, 0.0f, 0.50f, 65.0f, 25.0f, 10.0f, 320.0f, 1.0f , 70.0f,  3000.0f});
-        addProgram("Hat Grind",     { -2.0f, 55.0f, 2.0f, 50.0f, 60.0f, 60.0f,-3.0f, 0.0f, 5.0f, 4.0f, 2.60f, 50.0f, 40.0f,  1.0f,  60.0f, 1.0f , 20.0f, 20000.0f});
+        //                        out    mix   type drive shape grain  lo    mid    hi  cham  bore  ring  bloom rise   fall  mkp  keepLo   tame  core
+        addProgram("Init",          {  0.0f, 60.0f, 0.0f,  0.0f,  0.0f,  0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.00f, 45.0f, 35.0f,  3.0f, 150.0f, 1.0f , 20.0f, 20000.0f, 0.0f});
+        addProgram("Tube Weight",   {  0.0f, 70.0f, 0.0f, 45.0f,-25.0f, 40.0f, 2.0f,-1.0f, 0.0f, 0.0f, 0.85f, 55.0f, 35.0f,  5.0f, 220.0f, 1.0f , 20.0f, 20000.0f, 0.0f});
+        addProgram("Tape Glue",     {  0.0f, 65.0f, 1.0f, 35.0f,-40.0f, 55.0f, 1.0f, 0.0f,-2.0f, 1.0f, 1.00f, 40.0f, 45.0f,  6.0f, 250.0f, 1.0f , 20.0f,  9000.0f, 0.0f});
+        addProgram("Overdrive Snap",{  0.0f, 70.0f, 2.0f, 55.0f, 35.0f, 45.0f,-1.0f, 2.0f, 3.0f, 2.0f, 1.35f, 55.0f, 60.0f,  2.0f, 120.0f, 1.0f , 20.0f, 20000.0f, 0.0f});
+        addProgram("Room Bloom",    { -1.0f, 60.0f, 0.0f, 25.0f,  0.0f, 25.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.00f, 40.0f, 80.0f,  8.0f, 400.0f, 1.0f , 20.0f, 20000.0f, 0.0f});
+        addProgram("Metal Ring",    { -2.0f, 75.0f, 2.0f, 65.0f, 50.0f, 70.0f,-2.0f, 1.0f, 4.0f, 3.0f, 1.80f, 85.0f, 45.0f,  1.5f, 300.0f, 1.0f , 20.0f,  7000.0f, 0.0f});
+        addProgram("808 Furnace",   {  0.0f, 65.0f, 0.0f, 60.0f,-50.0f, 70.0f, 4.0f,-2.0f,-3.0f, 0.0f, 0.50f, 65.0f, 25.0f, 10.0f, 320.0f, 1.0f , 70.0f,  3000.0f, 0.0f});
+        addProgram("Hat Grind",     { -2.0f, 55.0f, 2.0f, 50.0f, 60.0f, 60.0f,-3.0f, 0.0f, 5.0f, 4.0f, 2.60f, 50.0f, 40.0f,  1.0f,  60.0f, 1.0f , 20.0f, 20000.0f, 0.0f});
     }
 
     // The MPC shows the parameter name and this text and does NOT append the unit label
@@ -194,6 +196,7 @@ public:
                     std::snprintf(buf, sizeof(buf), "%.0f %%", (double)plain);
                 break;
             case kBore:     std::snprintf(buf, sizeof(buf), "%.2fx", (double)plain); break;
+            case kCore:     std::snprintf(buf, sizeof(buf), "%.0f %%", (double)plain); break;
             case kKeepLo:   if (plain <= 20.5f) std::snprintf(buf, sizeof(buf), "Off");
                             else std::snprintf(buf, sizeof(buf), "%.0f Hz", (double)plain);
                             break;
@@ -223,6 +226,7 @@ public:
             splitDry_[c].setSampleRate(sampleRate);
             tame_[c].setSampleRate(sampleRate);
             lowDc_[c].prepare(sampleRate, 8.0f);
+            wetDc_[c].prepare(sampleRate, 8.0f);
         }
 
         cutLo_.setTime(20.0f, sampleRate);
@@ -245,7 +249,7 @@ public:
         {
             dryDelay_[c].reset();
             eqLo_[c].reset(); eqMid_[c].reset(); eqHi_[c].reset();
-            splitRaw_[c].reset(); splitDry_[c].reset(); tame_[c].reset(); lowDc_[c].reset();
+            splitRaw_[c].reset(); splitDry_[c].reset(); tame_[c].reset(); lowDc_[c].reset(); wetDc_[c].reset();
         }
         inMs_ = wetMs_ = 0.0f;
         ctrl_ = 0;
@@ -262,6 +266,7 @@ public:
                                clamp(get(kShape) * 0.01f, -1.0f, 1.0f), get(kGrain) * 0.01f);
         body_.setBlockParams(getInt(kChamber), get(kBore), get(kRing) * 0.01f,
                              get(kBloom) * 0.01f, get(kRise), get(kFall));
+        body_.setCore(get(kCore) * 0.01f);
 
         cutLo_.setTarget(clamp(get(kCutLo), -12.0f, 12.0f));
         cutMid_.setTarget(clamp(get(kCutMid), -12.0f, 12.0f));
@@ -383,9 +388,14 @@ public:
             }
             ++ctrl_;
 
+            // One DC blocker for the whole wet path. Damage only blocks DC in its Tube
+            // branch, the ladder and the Cut shelves pass DC, and CORE opens a route
+            // straight through the Body, which used to remove it as a side effect of
+            // being a bandpass bank. DC costs headroom at the clipper and thumps
+            // speakers. It sits BEFORE the mix so the dry side stays bit-exact at Mix 0.
             const float mk = makeup_.process();
-            const float wetL = bL * mk;
-            const float wetR = bR * mk;
+            const float wetL = wetDc_[0].process(bL * mk);
+            const float wetR = wetDc_[1].process(bR * mk);
 
             // --- global MIX, then the kept low end, OUTPUT trim, safety clipper ---
             // MIX crossfades only the band the chain actually processes, between the
@@ -418,7 +428,7 @@ public:
             for (int c = 0; c < 2; ++c)
             {
                 eqLo_[c].reset(); eqMid_[c].reset(); eqHi_[c].reset();
-                splitRaw_[c].reset(); splitDry_[c].reset(); tame_[c].reset(); lowDc_[c].reset();
+                splitRaw_[c].reset(); splitDry_[c].reset(); tame_[c].reset(); lowDc_[c].reset(); wetDc_[c].reset();
             }
             inMs_ = wetMs_ = 0.0f;
         }
@@ -458,7 +468,7 @@ private:
     Biquad       eqLo_[2], eqMid_[2], eqHi_[2];
     di::LinkwitzRiley4 splitRaw_[2], splitDry_[2];   // same cutoff: one on raw, one on delayed dry
     di::LadderLP tame_[2];
-    DCBlocker    lowDc_[2];
+    DCBlocker    lowDc_[2], wetDc_[2];
     Smoother  cutLo_, cutMid_, cutHi_, mix_, outGain_, makeup_;
 
     double sr_ = 44100.0;

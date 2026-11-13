@@ -108,8 +108,28 @@ its internal dry/wet (the unit's global MIX does that now) and its wet-path soft
 | **Bloom** | Auto | Envelope depth. Pushes Ring up on transients (and Bore up by 18 % as much) so the body blooms on each hit. |
 | **Rise** | Attack | Bloom attack, 0.3–100 ms. |
 | **Fall** | Release | Bloom release, 10–1000 ms. |
+| **Core** | *(new)* | How much of the Body's input passes straight through, under the resonant bands. 0 % is the pure resonator; turn it up and the body keeps the signal's full bandwidth. |
 
 Only the band above **Keep Lo** reaches the Body at all.
+
+### What Core is for
+
+The bank is four *parallel bandpasses*, so at Core 0 with Mix at 100 % only those four
+bands reach the output — on a full kit that reads as hollow, because the hats are simply
+not in any of the bands. An RBJ peaking filter is mathematically a direct path plus a
+scaled bandpass (`H_peak = 1 + (A−1)·H_bandpass`), so a bank without a through-path is a
+4-band filter while the same bank *with* one is the broadband-with-resonances response a
+cabinet or a drum shell actually has.
+
+Core is the through-path. It is the right way to get fullness back, because the signal it
+passes is the **processed** one — unlike lowering Mix, which gets fullness back out of
+*clean, undistorted* signal and therefore dilutes the Damage to do it. Measured with the
+chain clean: at Core 0 the output sits 9.9 dB below the input's high-frequency content; at
+Core 100 it tracks it to 0.72 dB.
+
+It defaults to **0**, so every factory program and anything you have already made sounds
+exactly as it did. The through-path is DC-blocked at 8 Hz: the resonant bands are
+inherently DC-free, so before Core existed no DC could leave this stage.
 
 The Body runs **100 % wet in series**: it is a bank of four resonant bands, so on its own
 it passes only those bands. MIX is what puts the direct signal back.
@@ -195,7 +215,7 @@ Both paths pass with zero failures and zero warnings.
 
 `test/drum_test.cpp` (the DSP, on a synthesised kick/snare/hat loop):
 
-- **38 checks, 0 failures.** Every scenario tests NaN/Inf, denormals, DC and tail decay
+- **41 checks, 0 failures.** Every scenario tests NaN/Inf, denormals, DC and tail decay
 - **Drive 100 % + Ring 100 % + Bloom 100 % simultaneously**, on all three algorithms at
   Shape −100/0/+100 with Grain 100: stable, peaks −1.0 to −2.6 dBFS
 - Everything maxed with all three Cut bands at +12 dB, a 0 dBFS input and Output +12 dB,
@@ -216,6 +236,12 @@ Both paths pass with zero failures and zero warnings.
   and DC-free
 - **No crossover notch**: with Keep Lo at 150 Hz, the response at 150 Hz moves only 1.1 dB
   between Mix 100 % and Mix 60 %, and the kept sub at 45 Hz moves 0.02 dB
+- **Core**: restores 13.6 dB of high end the bandpass bank discards, and with the chain
+  clean it tracks the input's bandwidth to 0.72 dB
+- **DC**: with the safety clipper bypassed, a hot input at Drive 100 / Core 100 /
+  Output +12 measures a DC offset of −0.00000. What little remains with the clipper in
+  circuit is the clipper working on an asymmetric waveform, which is inherent — nothing
+  may sit after it without breaking the ceiling guarantee
 
 ### Known limitations
 

@@ -34,6 +34,7 @@
 #include "dsp/math.h"
 #include "dsp/svf.h"
 #include "dsp/smoother.h"
+#include "dsp/onepole.h"
 
 #include "env_follower.h"
 
@@ -102,6 +103,7 @@ public:
         sr_ = sampleRate;
         for (int c = 0; c < 2; ++c)
             for (int m = 0; m < kNumModes; ++m) svf_[c][m].setSampleRate(sampleRate);
+        for (int c = 0; c < 2; ++c) coreDc_[c].prepare(sampleRate, 8.0f);
         boreOct_.setTime(30.0f, sampleRate);   // smoothed in log2 space: even in pitch
         ring_.setTime(30.0f, sampleRate);
         for (int t = 0; t < kNumChambers; ++t)
@@ -113,10 +115,20 @@ public:
         for (int c = 0; c < 2; ++c)
         {
             follower_[c].reset();
+            coreDc_[c].reset();
             for (int m = 0; m < kNumModes; ++m) svf_[c][m].reset();
         }
         ctrl_ = 0;
     }
+
+    // CORE: how much of the Body's input passes straight through, under the resonant
+    // bands. An RBJ peaking filter is exactly a direct path plus a scaled bandpass
+    // (H_peak = 1 + (A-1) * H_bandpass), so a bank of bandpasses WITHOUT a through-path
+    // is a 4-band filter, while the same bank WITH one is the broadband-with-resonances
+    // response a cabinet or body actually has. At 0 this is the pure resonator the plugin
+    // shipped with; turn it up and the body keeps the signal's full bandwidth, with the
+    // distortion intact, instead of relying on the unit's MIX to blend clean signal back.
+    void setCore(float core01) { core_ = clamp(core01, 0.0f, 1.0f); }
 
     // Called once per block. bore is a multiplier (0.25..4), ring and bloom are 0..1.
     void setBlockParams(int chamber, float bore, float ring01, float bloom01,
@@ -166,8 +178,12 @@ public:
             outL = outR = 0.0f;
             return false;
         }
-        outL = wetL;
-        outR = wetR;
+        // The through-path is DC-blocked: the resonant bands are inherently DC-free, so
+        // before CORE existed no DC could leave this stage. Damage only DC-blocks in its
+        // Tube branch, so without this the Tape and Overdrive algorithms would push the
+        // input's DC straight to the output as soon as CORE came up.
+        outL = wetL + coreDc_[0].process(core_ * inL);
+        outR = wetR + coreDc_[1].process(core_ * inR);
         return true;
     }
 
@@ -223,12 +239,14 @@ private:
     SVF         svf_[2][kNumModes];
     EnvFollower follower_[2];
     Smoother    boreOct_, ring_;
+    DCBlocker   coreDc_[2];
 
     double sr_ = 44100.0;
     float gainLin_[kNumChambers][kNumModes] = {{0}};
     float norm_[kNumModes] = {0};
     int   chamber_ = 1;
     float bloom_ = 0.0f;
+    float core_ = 0.0f;
     unsigned ctrl_ = 0;
 };
 
