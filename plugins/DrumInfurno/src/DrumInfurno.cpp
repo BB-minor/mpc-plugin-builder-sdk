@@ -6,8 +6,10 @@
 //
 //   in ──┬─────────────── dry, delay-aligned ──────────────────────────┐
 //        │                                                             │
-//        └─► DAMAGE ─► CUT ─► BODY ─► AUTO-MAKEUP ─────────────────────┤
-//            (3 algos) (EQ)  (modal)  (slow RMS, wet -> input level)    │
+//        └─► DAMAGE ─► TAME ─► CUT ─► BODY ─► AUTO-MAKEUP ──────────────┤
+//            (3 algos) (ladder)(EQ)  (modal)  (slow RMS)                │
+//            ▲ only the band above KEEP LO enters here; the band below   │
+//              bypasses the chain and rejoins after the makeup ──────────┤
 //                                                                      ▼
 //                                            global MIX ─► OUTPUT trim ─► SAFETY SOFT-CLIP ─► out
 //
@@ -44,6 +46,7 @@
 
 #include "damage.h"
 #include "body.h"
+#include "ladder.h"
 
 #include <cmath>
 #include <cstdio>
@@ -100,6 +103,9 @@ public:
         kRise,         // ms  - Bloom attack
         kFall,         // ms  - Bloom release
         kMakeup,       // on/off
+        // --- appended in 1.1; never inserted above, that would move every id ---
+        kKeepLo,       // Hz  - crossover below which the signal bypasses the chain
+        kTame,         // Hz  - ladder lowpass before makeup and the clipper
         kNumParams
     };
 
@@ -142,20 +148,22 @@ public:
         addParam(logParam   ("rise",  "Rise",       0.3f, 100.0f,  3.0f, "ms", 1));
         addParam(logParam   ("fall",  "Fall",      10.0f, 1000.0f,150.0f, "ms", 0));
         addParam(boolParam  ("makeup","Makeup",    true));
+        addParam(logParam   ("keeplo","Keep Lo",   20.0f, 250.0f,   20.0f, "Hz", 0));
+        addParam(logParam   ("tame",  "Tame",     200.0f, 20000.0f, 20000.0f, "Hz", 0));
 
         if (numParams() != kNumParams)
             mpc::log("DrumInfurno: parameter count mismatch (%d vs %d)", numParams(), (int)kNumParams);
 
         // ----- factory programs: plain values, in parameter order -------------
-        //                        out    mix   type drive shape grain  lo    mid    hi  cham  bore  ring  bloom rise   fall  mkp
-        addProgram("Init",          {  0.0f, 60.0f, 0.0f,  0.0f,  0.0f,  0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.00f, 45.0f, 35.0f,  3.0f, 150.0f, 1.0f });
-        addProgram("Tube Weight",   {  0.0f, 70.0f, 0.0f, 45.0f,-25.0f, 40.0f, 2.0f,-1.0f, 0.0f, 0.0f, 0.85f, 55.0f, 35.0f,  5.0f, 220.0f, 1.0f });
-        addProgram("Tape Glue",     {  0.0f, 65.0f, 1.0f, 35.0f,-40.0f, 55.0f, 1.0f, 0.0f,-2.0f, 1.0f, 1.00f, 40.0f, 45.0f,  6.0f, 250.0f, 1.0f });
-        addProgram("Overdrive Snap",{  0.0f, 70.0f, 2.0f, 55.0f, 35.0f, 45.0f,-1.0f, 2.0f, 3.0f, 2.0f, 1.35f, 55.0f, 60.0f,  2.0f, 120.0f, 1.0f });
-        addProgram("Room Bloom",    { -1.0f, 60.0f, 0.0f, 25.0f,  0.0f, 25.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.00f, 40.0f, 80.0f,  8.0f, 400.0f, 1.0f });
-        addProgram("Metal Ring",    { -2.0f, 75.0f, 2.0f, 65.0f, 50.0f, 70.0f,-2.0f, 1.0f, 4.0f, 3.0f, 1.80f, 85.0f, 45.0f,  1.5f, 300.0f, 1.0f });
-        addProgram("808 Furnace",   {  0.0f, 65.0f, 0.0f, 60.0f,-50.0f, 70.0f, 4.0f,-2.0f,-3.0f, 0.0f, 0.50f, 65.0f, 25.0f, 10.0f, 320.0f, 1.0f });
-        addProgram("Hat Grind",     { -2.0f, 55.0f, 2.0f, 50.0f, 60.0f, 60.0f,-3.0f, 0.0f, 5.0f, 4.0f, 2.60f, 50.0f, 40.0f,  1.0f,  60.0f, 1.0f });
+        //                        out    mix   type drive shape grain  lo    mid    hi  cham  bore  ring  bloom rise   fall  mkp  keepLo   tame
+        addProgram("Init",          {  0.0f, 60.0f, 0.0f,  0.0f,  0.0f,  0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.00f, 45.0f, 35.0f,  3.0f, 150.0f, 1.0f , 20.0f, 20000.0f});
+        addProgram("Tube Weight",   {  0.0f, 70.0f, 0.0f, 45.0f,-25.0f, 40.0f, 2.0f,-1.0f, 0.0f, 0.0f, 0.85f, 55.0f, 35.0f,  5.0f, 220.0f, 1.0f , 20.0f, 20000.0f});
+        addProgram("Tape Glue",     {  0.0f, 65.0f, 1.0f, 35.0f,-40.0f, 55.0f, 1.0f, 0.0f,-2.0f, 1.0f, 1.00f, 40.0f, 45.0f,  6.0f, 250.0f, 1.0f , 20.0f,  9000.0f});
+        addProgram("Overdrive Snap",{  0.0f, 70.0f, 2.0f, 55.0f, 35.0f, 45.0f,-1.0f, 2.0f, 3.0f, 2.0f, 1.35f, 55.0f, 60.0f,  2.0f, 120.0f, 1.0f , 20.0f, 20000.0f});
+        addProgram("Room Bloom",    { -1.0f, 60.0f, 0.0f, 25.0f,  0.0f, 25.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.00f, 40.0f, 80.0f,  8.0f, 400.0f, 1.0f , 20.0f, 20000.0f});
+        addProgram("Metal Ring",    { -2.0f, 75.0f, 2.0f, 65.0f, 50.0f, 70.0f,-2.0f, 1.0f, 4.0f, 3.0f, 1.80f, 85.0f, 45.0f,  1.5f, 300.0f, 1.0f , 20.0f,  7000.0f});
+        addProgram("808 Furnace",   {  0.0f, 65.0f, 0.0f, 60.0f,-50.0f, 70.0f, 4.0f,-2.0f,-3.0f, 0.0f, 0.50f, 65.0f, 25.0f, 10.0f, 320.0f, 1.0f , 70.0f,  3000.0f});
+        addProgram("Hat Grind",     { -2.0f, 55.0f, 2.0f, 50.0f, 60.0f, 60.0f,-3.0f, 0.0f, 5.0f, 4.0f, 2.60f, 50.0f, 40.0f,  1.0f,  60.0f, 1.0f , 20.0f, 20000.0f});
     }
 
     // The MPC shows the parameter name and this text and does NOT append the unit label
@@ -186,6 +194,13 @@ public:
                     std::snprintf(buf, sizeof(buf), "%.0f %%", (double)plain);
                 break;
             case kBore:     std::snprintf(buf, sizeof(buf), "%.2fx", (double)plain); break;
+            case kKeepLo:   if (plain <= 20.5f) std::snprintf(buf, sizeof(buf), "Off");
+                            else std::snprintf(buf, sizeof(buf), "%.0f Hz", (double)plain);
+                            break;
+            case kTame:     if (plain >= 19000.0f) std::snprintf(buf, sizeof(buf), "Open");
+                            else if (plain >= 1000.0f) std::snprintf(buf, sizeof(buf), "%.1f kHz", (double)plain * 0.001);
+                            else std::snprintf(buf, sizeof(buf), "%.0f Hz", (double)plain);
+                            break;
             case kRise:     std::snprintf(buf, sizeof(buf), plain < 10.0f ? "%.1f ms" : "%.0f ms", (double)plain); break;
             case kFall:     std::snprintf(buf, sizeof(buf), "%.0f ms", (double)plain); break;
             default: return false;   // Damage, Chamber, Makeup: the choice label is right
@@ -201,7 +216,14 @@ public:
         damage_.prepare(sampleRate);
         body_.prepare(sampleRate);
 
-        for (int c = 0; c < 2; ++c) dryDelay_[c].prepare((int)(sampleRate * 0.01) + 4);
+        for (int c = 0; c < 2; ++c)
+        {
+            dryDelay_[c].prepare((int)(sampleRate * 0.01) + 4);
+            splitRaw_[c].setSampleRate(sampleRate);
+            splitDry_[c].setSampleRate(sampleRate);
+            tame_[c].setSampleRate(sampleRate);
+            lowDc_[c].prepare(sampleRate, 8.0f);
+        }
 
         cutLo_.setTime(20.0f, sampleRate);
         cutMid_.setTime(20.0f, sampleRate);
@@ -223,6 +245,7 @@ public:
         {
             dryDelay_[c].reset();
             eqLo_[c].reset(); eqMid_[c].reset(); eqHi_[c].reset();
+            splitRaw_[c].reset(); splitDry_[c].reset(); tame_[c].reset(); lowDc_[c].reset();
         }
         inMs_ = wetMs_ = 0.0f;
         ctrl_ = 0;
@@ -244,6 +267,18 @@ public:
         cutMid_.setTarget(clamp(get(kCutMid), -12.0f, 12.0f));
         cutHi_.setTarget(clamp(get(kCutHi), -12.0f, 12.0f));
         updateCutCoefficients();          // biquads: per block, never per sample
+
+        // KEEP LO: the crossover below which the signal bypasses the whole chain.
+        const float keepHz = clamp(get(kKeepLo), 20.0f, 250.0f);
+        for (int c = 0; c < 2; ++c)
+        {
+            splitRaw_[c].setCutoff(keepHz); splitDry_[c].setCutoff(keepHz);
+        }
+
+        // TAME: the ladder. Fully open bypasses it outright so "off" is exactly transparent.
+        const float tameHz = clamp(get(kTame), 200.0f, 20000.0f);
+        tameBypass_ = tameHz >= 19000.0f;
+        if (!tameBypass_) for (int c = 0; c < 2; ++c) tame_[c].setCutoff(tameHz);
 
         mix_.setTarget(clamp(get(kMix) * 0.01f, 0.0f, 1.0f));
         outGain_.setTarget(dbToGain(clamp(get(kOutput), -24.0f, 12.0f)));
@@ -273,9 +308,41 @@ public:
             const float dryL = dryDelay_[0].readLinear(align);
             const float dryR = dryDelay_[1].readLinear(align);
 
+            // --- KEEP LO: subtractive crossover ---------------------------------
+            // The chain gets (x - low), and (low) is added back after the makeup, so the
+            // two halves reconstruct the input exactly: no phase cancellation to design
+            // around, and the sub stays at its original level whatever the chain does.
+            // The clean low is taken from the DELAYED dry, so it needs no delay line of
+            // its own - a lowpass and a delay commute, so this is exactly the delayed
+            // version of what was removed from the chain's input.
+            // DC-blocked: this band bypasses the chain, so it also bypasses Damage's DC
+            // blocker and the Body's bandpass. Without this the input's DC lands straight
+            // on the output - and at the minimum Keep Lo setting the "low band" is very
+            // nearly just DC. At 8 Hz an 808's fundamental is untouched.
+            float lowRawL, chainInL, lowRawR, chainInR, lowDryL, lowDryR, unusedL, unusedR;
+            splitRaw_[0].process(rawL, lowRawL, chainInL);
+            splitRaw_[1].process(rawR, lowRawR, chainInR);
+            splitDry_[0].process(dryL, lowDryL, unusedL);
+            splitDry_[1].process(dryR, lowDryR, unusedR);
+            (void)lowRawL; (void)lowRawR; (void)unusedL; (void)unusedR;
+            const float lowL = lowDc_[0].process(lowDryL);
+            const float lowR = lowDc_[1].process(lowDryR);
+
             // --- DAMAGE (its own flutter line applies the same nominal delay) ---
             float dL, dR;
-            if (!damage_.processFrame(rawL, rawR, dL, dR)) sawBadValue = true;
+            if (!damage_.processFrame(chainInL, chainInR, dL, dR)) sawBadValue = true;
+
+            // --- TAME: ladder lowpass, right after the saturation -----------------
+            // Placed here, not after the Body, because the Body is a bandpass bank: by the
+            // time the signal leaves it there is often no high end left to remove, so a
+            // ladder after it would be inaudible at most settings. Here it catches the
+            // fizz where the fizz is made, which is the classic amp order (drive -> tone
+            // -> cabinet), and it is still ahead of the makeup and the clipper as asked.
+            if (!tameBypass_)
+            {
+                dL = tame_[0].process(dL);
+                dR = tame_[1].process(dR);
+            }
 
             // --- CUT: low shelf -> bell -> high shelf ---
             dL = eqHi_[0].process(eqMid_[0].process(eqLo_[0].process(dL)));
@@ -285,8 +352,11 @@ public:
             float bL, bR;
             if (!body_.processFrame(dL, dR, bL, bR)) { sawBadValue = true; }
 
-            // --- AUTO-MAKEUP: slow RMS of the aligned input vs the wet, pre-makeup ---
-            const float monoIn  = 0.5f * (dryL + dryR);
+            // --- AUTO-MAKEUP: slow RMS, high band in vs chain out, pre-makeup -----
+            // Measured against the HIGH band, not the whole input: the chain never sees
+            // the kept low end, so comparing it to the full input would ask the makeup to
+            // replace energy that was deliberately routed around it.
+            const float monoIn  = 0.5f * ((dryL - lowL) + (dryR - lowR));
             const float monoWet = 0.5f * (bL + bR);
             inMs_  += rmsCoeff_ * (monoIn * monoIn - inMs_);
             wetMs_ += rmsCoeff_ * (monoWet * monoWet - wetMs_);
@@ -301,9 +371,11 @@ public:
             }
             ++ctrl_;
 
+            // The kept low end rejoins AFTER the makeup, so its level is genuinely
+            // untouched: only the Output trim and the safety clipper see it from here.
             const float mk = makeup_.process();
-            float wetL = bL * mk;
-            float wetR = bR * mk;
+            const float wetL = bL * mk + lowL;
+            const float wetR = bR * mk + lowR;
 
             // --- global MIX, OUTPUT trim, then the one safety clipper ---
             const float mix = mix_.process();
@@ -324,7 +396,11 @@ public:
         {
             damage_.panic();
             body_.panic();
-            for (int c = 0; c < 2; ++c) { eqLo_[c].reset(); eqMid_[c].reset(); eqHi_[c].reset(); }
+            for (int c = 0; c < 2; ++c)
+            {
+                eqLo_[c].reset(); eqMid_[c].reset(); eqHi_[c].reset();
+                splitRaw_[c].reset(); splitDry_[c].reset(); tame_[c].reset(); lowDc_[c].reset();
+            }
             inMs_ = wetMs_ = 0.0f;
         }
     }
@@ -359,14 +435,18 @@ private:
     di::DamageStage damage_;
     di::BodyStage   body_;
 
-    DelayLine dryDelay_[2];
-    Biquad    eqLo_[2], eqMid_[2], eqHi_[2];
+    DelayLine    dryDelay_[2];
+    Biquad       eqLo_[2], eqMid_[2], eqHi_[2];
+    di::LinkwitzRiley4 splitRaw_[2], splitDry_[2];   // same cutoff: one on raw, one on delayed dry
+    di::LadderLP tame_[2];
+    DCBlocker    lowDc_[2];
     Smoother  cutLo_, cutMid_, cutHi_, mix_, outGain_, makeup_;
 
     double sr_ = 44100.0;
     float  rmsCoeff_ = 0.0f;
     float  inMs_ = 0.0f, wetMs_ = 0.0f;
     bool   makeupOn_ = true;
+    bool   tameBypass_ = true;
     bool   safetyClipOn_ = true;
     unsigned ctrl_ = 0;
 };

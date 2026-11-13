@@ -14,12 +14,15 @@ Three sections in one insert, voiced for drums.
 Strictly in series, in this order:
 
 ```
-in ──┬──────────────── dry, delay-aligned ───────────────────────────┐
-     │                                                               │
-     └─► DAMAGE ─► CUT ─► BODY ─► AUTO-MAKEUP ──────────────────────┤
-         Tube      3-band  modal   slow RMS, wet -> input level       │
-         Tape      EQ      resonator                                  ▼
-         Overdrive                        global MIX ─► OUTPUT ─► SAFETY SOFT-CLIP ─► out
+in ──┬───────────────────── dry, delay-aligned ──────────────────────────┐
+     │                                                                   │
+     ├─► KEEP LO ─ low band ─────────────── clean, untouched ───────┐    │
+     │      │                                                       │    │
+     │   high band                                                  ▼    ▼
+     └──────┴─► DAMAGE ─► TAME ─► CUT ─► BODY ─► AUTO-MAKEUP ─► + ─► MIX ─► OUTPUT ─► SAFETY CLIP ─► out
+                Tube      ladder  3-band  modal   slow RMS
+                Tape      LP      EQ      resonator
+                Overdrive
 ```
 
 **Drive at minimum plus Cut flat gives you Body alone.** DRIVE is a parallel blend with
@@ -48,6 +51,43 @@ off too, which is what makes it read as tape rather than as an EQ.
 Tape's flutter modulates a delay line, and its depth scales with DRIVE — flutter is part
 of Damage, so DRIVE 0 has to leave the signal completely alone.
 
+## KEEP LO — protecting the low end
+
+Turn **Keep Lo** up and everything below it bypasses the entire chain and rejoins clean,
+after the auto-makeup. Point it just above your 808's fundamental (they usually sit at
+30–60 Hz, so 70–100 Hz is the useful region) and the sub comes through untouched while
+everything above it still gets cooked. Fully anticlockwise reads **Off**.
+
+It is a **Linkwitz-Riley 4th-order crossover**, not the obvious `high = x − lowpass(x)`
+subtractive split. That matters: a subtractive split reconstructs the input exactly, but
+the high band it produces is only a *6 dB/oct* highpass however steep you make the
+lowpass. Measured on this plugin, a 2-pole version at a 150 Hz crossover still passed
+55 Hz into the distortion at −3.7 dB, so the "kept" sub came out as a blend of clean and
+processed. LR4 gives 24 dB/oct on both sides — the same leak is about −35 dB — and its two
+bands sum to an allpass, so the magnitude stays flat across the crossover with no polarity
+trickery. The clean band is DC-blocked at 8 Hz, because bypassing the chain also bypasses
+Damage's DC blocker and the Body's bandpass.
+
+**It does not and cannot follow the notes you play.** Effects on the MPC receive no MIDI
+at all, so the plugin has no idea what is playing; the alternative would be pitch-tracking
+the audio, which on a drum bus is unreliable and costs latency. A fixed crossover you place
+by ear is both simpler and more predictable.
+
+## TAME — the ladder lowpass
+
+A **zero-delay-feedback Moog-style ladder**, 24 dB/oct, with a fixed resonance of 0.9
+against the 4.0 that would make a ladder self-oscillate. Use it when a hard drive gets
+glarey: it takes the fizz off without simply dulling the sound, because the feedback path
+is saturated, so the resonance and the distortion interact the way they do in an amp
+rather than sitting on top of each other. Fully clockwise reads **Open** and bypasses the
+stage outright, so "off" is exactly transparent.
+
+It sits **immediately after Damage**, not after the Body. The Body is a bandpass bank, so
+by the time the signal leaves it there is frequently no high end left to remove — a ladder
+after it measured 1 dB of effect where the same filter before it measures 21 dB. Here it
+catches the fizz where the fizz is made, which is also the classic amp order (drive → tone
+→ cabinet), and it is still ahead of the auto-makeup and the clipper.
+
 ## CUT
 
 Three transparent-at-centre bands: **Cut Lo** (low shelf, 100 Hz), **Cut Mid** (bell,
@@ -68,6 +108,8 @@ its internal dry/wet (the unit's global MIX does that now) and its wet-path soft
 | **Bloom** | Auto | Envelope depth. Pushes Ring up on transients (and Bore up by 18 % as much) so the body blooms on each hit. |
 | **Rise** | Attack | Bloom attack, 0.3–100 ms. |
 | **Fall** | Release | Bloom release, 10–1000 ms. |
+
+Only the band above **Keep Lo** reaches the Body at all.
 
 The Body runs **100 % wet in series**: it is a bank of four resonant bands, so on its own
 it passes only those bands. MIX is what puts the direct signal back.
@@ -126,9 +168,9 @@ latency, and the dry path is delayed to match so MIX stays phase-coherent.
 
 ## CPU
 
-Measured on a desktop x86 CPU at 128 frames / 44.1 kHz: **0.40–0.64 % of the real-time
+Measured on a desktop x86 CPU at 128 frames / 44.1 kHz: **0.49–0.67 % of the real-time
 budget per instance**; two instances in series with both maxed, on the most expensive
-algorithm (Tape), **0.99–1.17 %**. The SDK's own estimate is that the MPC's ARM core is
+algorithm (Tape) with the crossover and the ladder both active, **1.50 %**. The SDK's own estimate is that the MPC's ARM core is
 15–25× slower, which puts one instance in the mid single digits of a percent on a 32-bit
 MPC X / Live / One, with room for the two instances the brief asked for. Cost is flat:
 there are no data-dependent branches in the audio path.
@@ -145,7 +187,7 @@ Both paths pass with zero failures and zero warnings.
 
 `test/drum_test.cpp` (the DSP, on a synthesised kick/snare/hat loop):
 
-- **28 checks, 0 failures.** Every scenario tests NaN/Inf, denormals, DC and tail decay
+- **36 checks, 0 failures.** Every scenario tests NaN/Inf, denormals, DC and tail decay
 - **Drive 100 % + Ring 100 % + Bloom 100 % simultaneously**, on all three algorithms at
   Shape −100/0/+100 with Grain 100: stable, peaks −1.0 to −2.6 dBFS
 - Everything maxed with all three Cut bands at +12 dB, a 0 dBFS input and Output +12 dB,
@@ -157,7 +199,13 @@ Both paths pass with zero failures and zero warnings.
 - **Auto-makeup** lands within 1.8 dB of input level and is measurably closer than with it off
 - **Parameter slam**: all 16 parameters randomised between every block — stable
 - **Self-oscillation proof**: impulse then 10 s of silence at max Drive/Ring/Bloom decays
-  to −240 dBFS (true zero) on all three algorithms
+  to −240 dBFS (true zero) on all three algorithms, and again with the ladder at its
+  lowest cutoff (its most resonant setting)
+- **Keep Lo**: at Drive 100 the sub arriving at the output correlates **0.964** with the
+  original sub (0.793 with Keep Lo off) and its level lands 0.08 dB from the input's. With
+  the resonator alone it holds the sub 6.4 dB closer than without
+- **Tame**: removes 21 dB above 4 kHz at a 1 kHz cutoff, staying finite, under the ceiling
+  and DC-free
 
 ### Known limitations
 
@@ -178,6 +226,14 @@ Both paths pass with zero failures and zero warnings.
   compensated exactly, but the flutter modulation around it is not — that is what flutter
   is. It is subtle at the depths used here.
 - **MIX dilutes Damage as well as Body**, by design (see above).
+- **Keep Lo shifts the sub's phase.** LR4 is flat in magnitude but not in phase, so the
+  kept low end is time-shifted a few milliseconds relative to a completely unprocessed
+  copy. Against the plugin's own dry path this is consistent and inaudible; if you run
+  Drum Infurno in parallel with an untreated copy of the same drums outside the plugin,
+  expect some comb filtering in the crossover region.
+- **The clean low still passes through Output and the safety clipper.** It has to: the
+  clipper is the last line of defence and must see the sum. Drive hard enough and the
+  clipper will act on the sub along with everything else.
 
 ## Testing it yourself
 

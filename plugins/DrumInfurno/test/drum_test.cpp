@@ -157,7 +157,7 @@ struct Stats
             if (!std::isfinite(v)) { ++badSamples; continue; }
             const float a = std::fabs(v);
             if (a > kCeilingLinear + 1.0e-6f) ++overCeiling;
-            if (a != 0.0f && a < 1.0e-30f) ++denormals;
+            if (a != 0.0f && a < 1.1754944e-38f) ++denormals;   // true denormals: < FLT_MIN
             peak = std::fmax(peak, a);
             if (inTail) tailPeak = std::fmax(tailPeak, a);
             sumSq += (double)v * v; sum += v; ++count;
@@ -177,6 +177,8 @@ struct Settings
     int   chamber = 1;
     float bore = 1.0f, ring = 45, bloom = 35, rise = 3, fall = 150;
     bool  makeup = true;
+    float keepLo = 20.0f;     // 20 Hz = effectively off
+    float tame = 20000.0f;    // fully open = bypassed
     float inputPeak = 0.5f;
     bool  clip = true;
 };
@@ -227,6 +229,8 @@ Result run(const Settings& s, const std::string& wavDir = "", const char* wavNam
     p.set(DrumInfurno::kRise, s.rise);
     p.set(DrumInfurno::kFall, s.fall);
     p.set(DrumInfurno::kMakeup, s.makeup ? 1.0f : 0.0f);
+    p.set(DrumInfurno::kKeepLo, s.keepLo);
+    p.set(DrumInfurno::kTame, s.tame);
     p.setSafetyClipEnabled(s.clip);
 
     p.internalSetSampleRate(kSr);
@@ -264,6 +268,61 @@ Result run(const Settings& s, const std::string& wavDir = "", const char* wavNam
     res.avgCpu = budget > 0 ? 100.0 * elapsed / budget : 0.0;
     if (!wavDir.empty() && wavName) writeWav(wavDir + "/" + wavName + ".wav", res.L, res.R);
     return res;
+}
+
+// Offline analysis helpers. These run on a rendered buffer, not in the audio path.
+double bandRmsDb(const std::vector<float>& x, float hz, bool below)
+{
+    // Four cascaded one-poles (24 dB/oct). Two poles were not steep enough: at 70 Hz they
+    // still passed the Body's 100 Hz resonance at -9.7 dB, so the "sub" reading was really
+    // measuring body ring. Four poles put 100 Hz 25 dB down.
+    const float a = 1.0f - std::exp(-2.0f * 3.14159265f * hz / (float)kSr);
+    float z1 = 0.0f, z2 = 0.0f, z3 = 0.0f, z4 = 0.0f;
+    double sum = 0.0;
+    for (float v : x)
+    {
+        z1 += a * (v - z1);
+        z2 += a * (z1 - z2);
+        z3 += a * (z2 - z3);
+        z4 += a * (z3 - z4);
+        const double band = below ? z4 : (double)v - z4;
+        sum += band * band;
+    }
+    return 20.0 * std::log10(std::sqrt(sum / (double)x.size()) + 1e-12);
+}
+
+// Normalised correlation of two signals' low bands, b delayed by `lag` samples relative
+// to a. 1.0 = same waveform at any level; lower = a different (processed) waveform.
+double subCorrelation(const std::vector<float>& out, const std::vector<float>& in, float hz, size_t lag)
+{
+    const float a = 1.0f - std::exp(-2.0f * 3.14159265f * hz / (float)kSr);
+    auto band = [&](const std::vector<float>& x) {
+        std::vector<double> y(x.size());
+        float z1 = 0, z2 = 0, z3 = 0, z4 = 0;
+        for (size_t i = 0; i < x.size(); ++i)
+        {
+            z1 += a * (x[i] - z1); z2 += a * (z1 - z2); z3 += a * (z2 - z3); z4 += a * (z3 - z4);
+            y[i] = z4;
+        }
+        return y;
+    };
+    const std::vector<double> A = band(out), B = band(in);
+    // Search the lag rather than assuming it. The crossover's lowpass has real group delay
+    // at 50 Hz - several milliseconds - and a fixed lag would score that phase shift as if
+    // it were distortion. What we want to know is whether the SAME waveform is there.
+    double best = 0.0;
+    for (size_t d = lag; d < lag + 700 && d < A.size(); ++d)
+    {
+        double ab = 0, aa = 0, bb = 0;
+        for (size_t i = d; i < A.size(); ++i)
+        {
+            const double u = A[i], v = B[i - d];
+            ab += u * v; aa += u * u; bb += v * v;
+        }
+        const double c = (aa > 0 && bb > 0) ? ab / std::sqrt(aa * bb) : 0.0;
+        if (c > best) best = c;
+    }
+    return best;
 }
 
 int failures = 0;
@@ -458,6 +517,97 @@ int main(int argc, char** argv)
               di::DamageStage::typeName(t), lastDb);
     }
 
+    // ----- 8b. KEEP LO protects the low end from the chain ------------------
+    std::printf("\n-- KEEP LO: the sub reaching the output should be the ORIGINAL sub --\n");
+    {
+        // Level is the wrong success criterion here: clipping a kick squares it up and
+        // regenerates fundamental energy, so with Keep Lo OFF the output can hold MORE
+        // sub than the input - just not the input's sub. What "untouched" means is that
+        // the waveform is the original one, so this correlates the output's sub band with
+        // the input's. Scale-invariant by construction.
+        Settings off; off.mix = 100; off.drive = 100; off.ring = 80; off.type = 2;
+        off.makeup = false; off.keepLo = 20.0f;
+        Settings on = off; on.keepLo = 150.0f;
+        Result roff = run(off, wavDir, "40-keeplo-off"), ron = run(on, wavDir, "41-keeplo-150");
+        DrumLoop ref; ref.build(0.5f);
+        const size_t lag = (size_t)di::kFlutterNominal;
+        const double cOff = subCorrelation(roff.L, ref.left, 55.0f, lag);
+        const double cOn  = subCorrelation(ron.L,  ref.left, 55.0f, lag);
+        const double refLo = bandRmsDb(ref.left, 55.0f, true);
+        std::printf("INFO sub (<55 Hz) rms: input %.2f | off %.2f | on %.2f dBFS\n",
+                    refLo, bandRmsDb(roff.L, 55.0f, true), bandRmsDb(ron.L, 55.0f, true));
+        std::printf("INFO sub correlation with the original (best lag): off %.3f | on %.3f\n", cOff, cOn);
+        check(cOn > 0.95, "with Keep Lo on the sub is the original waveform (correlation %.3f)", cOn);
+        check(cOn > cOff + 0.05, "Keep Lo on correlates better than off (%.3f vs %.3f)", cOn, cOff);
+        check(ron.stats.badSamples == 0 && ron.stats.overCeiling == 0,
+              "Keep Lo stays finite and under the ceiling");
+
+        // And the plain level case, where nothing is regenerating sub: Body alone.
+        Settings q = on; q.drive = 0; q.inputPeak = 0.25f;
+        Settings qoff = q; qoff.keepLo = 20.0f;
+        DrumLoop r2; r2.build(0.25f);
+        const double base = bandRmsDb(r2.left, 55.0f, true);
+        const double lOff = bandRmsDb(run(qoff).L, 55.0f, true);
+        const double lOn  = bandRmsDb(run(q).L, 55.0f, true);
+        std::printf("INFO Body alone, sub vs input: off %+.2f dB | on %+.2f dB\n", lOff - base, lOn - base);
+        check(std::fabs(lOn - base) < std::fabs(lOff - base),
+              "with the resonator alone, Keep Lo holds the sub %.2f dB closer",
+              std::fabs(lOff - base) - std::fabs(lOn - base));
+    }
+
+    // ----- 8c. TAME actually removes high end, and stays stable -------------
+    std::printf("\n-- TAME: the ladder should take the glare off, not blow up --\n");
+    {
+        Settings open_; open_.mix = 100; open_.drive = 100; open_.type = 2; open_.grain = 100;
+        open_.tame = 20000.0f; open_.makeup = false;
+        open_.chamber = 4; open_.bore = 4.0f; open_.ring = 0.0f;   // widest bands: HF reaches the output
+        Settings shut = open_; shut.tame = 1000.0f;
+        Result ro = run(open_, wavDir, "42-tame-open"), rs = run(shut, wavDir, "43-tame-1k");
+        const double hiOpen = bandRmsDb(ro.L, 4000.0f, false);
+        const double hiShut = bandRmsDb(rs.L, 4000.0f, false);
+        std::printf("INFO HF (>4 kHz) rms: Tame open %.2f | Tame 1 kHz %.2f dBFS (%.1f dB removed)\n",
+                    hiOpen, hiShut, hiOpen - hiShut);
+        check(hiShut < hiOpen - 6.0, "the ladder removes real high end (%.1f dB)", hiOpen - hiShut);
+        check(rs.stats.badSamples == 0 && rs.stats.overCeiling == 0 && std::fabs(rs.stats.dcOffset()) < 0.002,
+              "ladder output is finite, under the ceiling and DC-free");
+
+        Settings worst = shut; worst.tame = 200.0f; worst.keepLo = 250.0f; worst.bloom = 100;
+        worst.ring = 100; worst.out = 12; worst.inputPeak = 1.0f;
+        worst.cutLo = 12; worst.cutMid = 12; worst.cutHi = 12;
+        report("ladder min + everything max", run(worst, wavDir, "44-tame-min-max"), false, true);
+    }
+
+    // ----- 8d. the ladder must not self-oscillate --------------------------
+    std::printf("\n-- ladder self-oscillation check: impulse, then 10 s of silence --\n");
+    {
+        DrumInfurno p;
+        p.set(DrumInfurno::kMix, 100.0f);
+        p.set(DrumInfurno::kDrive, 100.0f);
+        p.set(DrumInfurno::kRing, 100.0f);
+        p.set(DrumInfurno::kBloom, 100.0f);
+        p.set(DrumInfurno::kTame, 200.0f);          // lowest cutoff: most resonant setting
+        p.set(DrumInfurno::kKeepLo, 250.0f);
+        p.set(DrumInfurno::kMakeup, 0.0f);
+        p.internalSetSampleRate(kSr);
+        p.internalSetBlockSize(128);
+        p.internalResume();
+        const size_t frames = (size_t)(10.0 * kSr);
+        std::vector<float> L(frames, 0.0f), R(frames, 0.0f);
+        L[0] = R[0] = 1.0f;
+        float lastSecond = 0.0f; bool finite = true;
+        for (size_t pos = 0; pos + 128 <= frames; pos += 128)
+        {
+            float* buf[2] = { L.data() + pos, R.data() + pos };
+            p.internalProcess(buf, buf, 128);
+            for (int i = 0; i < 128; ++i)
+                if (!std::isfinite(L[pos + i])) finite = false;
+            if (pos > frames - (size_t)kSr)
+                for (int i = 0; i < 128; ++i) lastSecond = std::fmax(lastSecond, std::fabs(L[pos + i]));
+        }
+        const double lastDb = 20.0 * std::log10(lastSecond + 1e-12);
+        check(finite && lastDb < -100.0, "ladder at minimum cutoff decays to %.1f dBFS", lastDb);
+    }
+
     // ----- 9. CPU with two instances ---------------------------------------
     std::printf("\n-- CPU: two instances in series, both maxed --\n");
     {
@@ -471,6 +621,8 @@ int main(int argc, char** argv)
             p->set(DrumInfurno::kBloom, 100.0f);
             p->set(DrumInfurno::kDamageType, 1.0f);   // Tape: the most expensive path
             p->set(DrumInfurno::kGrain, 100.0f);
+            p->set(DrumInfurno::kKeepLo, 150.0f);
+            p->set(DrumInfurno::kTame, 1200.0f);   // ladder active: the expensive path
             p->internalSetSampleRate(kSr);
             p->internalSetBlockSize(128);
             p->internalResume();
