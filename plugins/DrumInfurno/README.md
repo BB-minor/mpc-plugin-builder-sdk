@@ -116,11 +116,19 @@ it passes only those bands. MIX is what puts the direct signal back.
 
 ## MIX, OUTPUT, AUTO-MAKEUP and the safety clipper
 
-- **MIX** is a single global dry/wet for the whole unit. Worth knowing: because it blends
-  the *untouched input* back in, lowering it dilutes the Damage and the Cut as well as
-  filling in the Body's missing broadband energy. The default is 60 %. For full-series
-  colouration leave it at 100 % and use Drive and Ring for taste; pull it down when you
-  want the whole unit backed off, drum-bus style.
+- **MIX** is a single global dry/wet, default 60 %, and it crossfades **band for band**:
+  the dry side of the fade is the dry signal's *high* band, not the full-range input, and
+  the kept low end sits outside the fade at unity. That is not a detail — LR4's two bands
+  sum to an allpass, which at the crossover is 180° from the unfiltered input, so
+  crossfading the clean low against a full-range dry *subtracts* there. The first version
+  of this measured a **22.5 dB notch** at 150 Hz with Keep Lo at 150 Hz and Mix at 60 %.
+  Crossfading band-for-band keeps both sides of the fade in the same phase (now 1.4 dB
+  from the Mix 100 reading) and makes the kept sub independent of MIX, which is what
+  "untouched" ought to mean. There is a regression test for it.
+  Worth knowing: because MIX blends the *unprocessed* signal back in, lowering it dilutes
+  the Damage and the Cut as well as filling in the Body's missing broadband energy. For
+  full-series colouration leave it at 100 % and use Drive and Ring for taste; pull it down
+  when you want the whole unit backed off, drum-bus style.
 - **Auto-makeup** (toggle, default on) measures the input and the wet signal with a
   ~300 ms RMS average and applies a smoothed gain so the wet lands near input level,
   bounded to ±12 dB. It only equalises *level* — the Damage and clipper harmonics are
@@ -170,7 +178,7 @@ latency, and the dry path is delayed to match so MIX stays phase-coherent.
 
 Measured on a desktop x86 CPU at 128 frames / 44.1 kHz: **0.49–0.67 % of the real-time
 budget per instance**; two instances in series with both maxed, on the most expensive
-algorithm (Tape) with the crossover and the ladder both active, **1.50 %**. The SDK's own estimate is that the MPC's ARM core is
+algorithm (Tape) with the crossover and the ladder both active, **1.70 %**. The SDK's own estimate is that the MPC's ARM core is
 15–25× slower, which puts one instance in the mid single digits of a percent on a 32-bit
 MPC X / Live / One, with room for the two instances the brief asked for. Cost is flat:
 there are no data-dependent branches in the audio path.
@@ -187,7 +195,7 @@ Both paths pass with zero failures and zero warnings.
 
 `test/drum_test.cpp` (the DSP, on a synthesised kick/snare/hat loop):
 
-- **36 checks, 0 failures.** Every scenario tests NaN/Inf, denormals, DC and tail decay
+- **38 checks, 0 failures.** Every scenario tests NaN/Inf, denormals, DC and tail decay
 - **Drive 100 % + Ring 100 % + Bloom 100 % simultaneously**, on all three algorithms at
   Shape −100/0/+100 with Grain 100: stable, peaks −1.0 to −2.6 dBFS
 - Everything maxed with all three Cut bands at +12 dB, a 0 dBFS input and Output +12 dB,
@@ -206,6 +214,8 @@ Both paths pass with zero failures and zero warnings.
   the resonator alone it holds the sub 6.4 dB closer than without
 - **Tame**: removes 21 dB above 4 kHz at a 1 kHz cutoff, staying finite, under the ceiling
   and DC-free
+- **No crossover notch**: with Keep Lo at 150 Hz, the response at 150 Hz moves only 1.1 dB
+  between Mix 100 % and Mix 60 %, and the kept sub at 45 Hz moves 0.02 dB
 
 ### Known limitations
 
@@ -231,6 +241,10 @@ Both paths pass with zero failures and zero warnings.
   copy. Against the plugin's own dry path this is consistent and inaudible; if you run
   Drum Infurno in parallel with an untreated copy of the same drums outside the plugin,
   expect some comb filtering in the crossover region.
+- **Keep Lo at its minimum bypasses the crossover outright**, so "Off" is a true bypass
+  and Mix 0 then returns the input bit-for-bit. Engaged, the dry side of MIX is the dry
+  high band, which is magnitude-flat but phase-shifted, so Mix 0 is no longer bit-exact —
+  audibly identical, not numerically identical.
 - **The clean low still passes through Output and the safety clipper.** It has to: the
   clipper is the last line of defence and must see the sum. Drive hard enough and the
   clipper will act on the sub along with everything else.

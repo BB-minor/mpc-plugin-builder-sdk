@@ -270,6 +270,12 @@ public:
 
         // KEEP LO: the crossover below which the signal bypasses the whole chain.
         const float keepHz = clamp(get(kKeepLo), 20.0f, 250.0f);
+        // At the minimum the crossover is bypassed outright, so "Off" really is off: with
+        // it engaged the dry side of MIX is the dry HIGH band, which is magnitude-flat but
+        // phase-shifted, and at Mix 0 that is not bit-identical to the input. Switching it
+        // out at the bottom of the range restores an exact bypass for the default setting.
+        // The filters keep running either way, so re-engaging it cannot click.
+        keepLoBypass_ = keepHz <= 20.5f;
         for (int c = 0; c < 2; ++c)
         {
             splitRaw_[c].setCutoff(keepHz); splitDry_[c].setCutoff(keepHz);
@@ -319,14 +325,20 @@ public:
             // blocker and the Body's bandpass. Without this the input's DC lands straight
             // on the output - and at the minimum Keep Lo setting the "low band" is very
             // nearly just DC. At 8 Hz an 808's fundamental is untouched.
-            float lowRawL, chainInL, lowRawR, chainInR, lowDryL, lowDryR, unusedL, unusedR;
+            float lowRawL, chainInL, lowRawR, chainInR, lowDryL, lowDryR, dryHighL, dryHighR;
             splitRaw_[0].process(rawL, lowRawL, chainInL);
             splitRaw_[1].process(rawR, lowRawR, chainInR);
-            splitDry_[0].process(dryL, lowDryL, unusedL);
-            splitDry_[1].process(dryR, lowDryR, unusedR);
-            (void)lowRawL; (void)lowRawR; (void)unusedL; (void)unusedR;
-            const float lowL = lowDc_[0].process(lowDryL);
-            const float lowR = lowDc_[1].process(lowDryR);
+            splitDry_[0].process(dryL, lowDryL, dryHighL);
+            splitDry_[1].process(dryR, lowDryR, dryHighR);
+            (void)lowRawL; (void)lowRawR;
+            float lowL = lowDc_[0].process(lowDryL);
+            float lowR = lowDc_[1].process(lowDryR);
+            if (keepLoBypass_)
+            {
+                chainInL = rawL;  chainInR = rawR;      // whole signal into the chain
+                dryHighL = dryL;  dryHighR = dryR;      // whole signal as the MIX dry side
+                lowL = lowR = 0.0f;                     // nothing kept out
+            }
 
             // --- DAMAGE (its own flutter line applies the same nominal delay) ---
             float dL, dR;
@@ -356,7 +368,7 @@ public:
             // Measured against the HIGH band, not the whole input: the chain never sees
             // the kept low end, so comparing it to the full input would ask the makeup to
             // replace energy that was deliberately routed around it.
-            const float monoIn  = 0.5f * ((dryL - lowL) + (dryR - lowR));
+            const float monoIn  = 0.5f * (dryHighL + dryHighR);
             const float monoWet = 0.5f * (bL + bR);
             inMs_  += rmsCoeff_ * (monoIn * monoIn - inMs_);
             wetMs_ += rmsCoeff_ * (monoWet * monoWet - wetMs_);
@@ -371,18 +383,25 @@ public:
             }
             ++ctrl_;
 
-            // The kept low end rejoins AFTER the makeup, so its level is genuinely
-            // untouched: only the Output trim and the safety clipper see it from here.
             const float mk = makeup_.process();
-            const float wetL = bL * mk + lowL;
-            const float wetR = bR * mk + lowR;
+            const float wetL = bL * mk;
+            const float wetR = bR * mk;
 
-            // --- global MIX, OUTPUT trim, then the one safety clipper ---
+            // --- global MIX, then the kept low end, OUTPUT trim, safety clipper ---
+            // MIX crossfades only the band the chain actually processes, between the
+            // DRY HIGH band and the wet. The kept low end is added afterwards at unity.
+            //
+            // This matters: LR4's two bands sum to an allpass, which at the crossover is
+            // 180 degrees from the unfiltered input. Blending the clean low against a
+            // full-range dry therefore SUBTRACTS at the crossover - measured at -22.5 dB
+            // at 150 Hz with Mix 60. Crossfading band-for-band instead keeps both sides
+            // of the fade in the same phase, and the low end is independent of MIX, which
+            // is what "untouched" should mean.
             const float mix = mix_.process();
             const float g   = outGain_.process();
 
-            float yL = (dryL + (wetL - dryL) * mix) * g;
-            float yR = (dryR + (wetR - dryR) * mix) * g;
+            float yL = (dryHighL + (wetL - dryHighL) * mix + lowL) * g;
+            float yR = (dryHighR + (wetR - dryHighR) * mix + lowR) * g;
 
             if (!std::isfinite(yL) || !std::isfinite(yR)) { yL = yR = 0.0f; sawBadValue = true; }
 
@@ -447,6 +466,7 @@ private:
     float  inMs_ = 0.0f, wetMs_ = 0.0f;
     bool   makeupOn_ = true;
     bool   tameBypass_ = true;
+    bool   keepLoBypass_ = true;
     bool   safetyClipOn_ = true;
     unsigned ctrl_ = 0;
 };

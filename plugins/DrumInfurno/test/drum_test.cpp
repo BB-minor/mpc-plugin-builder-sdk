@@ -325,6 +325,27 @@ double subCorrelation(const std::vector<float>& out, const std::vector<float>& i
     return best;
 }
 
+// Magnitude response at one frequency, measured with a sine probe.
+double probeDb(float hz, float mix, float keepLo)
+{
+    DrumInfurno p;
+    p.set(DrumInfurno::kMix, mix);
+    p.set(DrumInfurno::kKeepLo, keepLo);
+    p.set(DrumInfurno::kDrive, 0.0f);
+    p.set(DrumInfurno::kMakeup, 0.0f);
+    p.internalSetSampleRate(kSr);
+    p.internalSetBlockSize(128);
+    p.internalResume();
+    const size_t n = (size_t)(3.0 * kSr);
+    std::vector<float> L(n), R(n);
+    for (size_t i = 0; i < n; ++i) L[i] = R[i] = 0.2f * (float)std::sin(6.2831853 * hz * (double)i / kSr);
+    for (size_t pos = 0; pos + 128 <= n; pos += 128)
+    { float* b[2] = { L.data() + pos, R.data() + pos }; p.internalProcess(b, b, 128); }
+    double sum = 0.0; size_t cnt = 0;
+    for (size_t i = (size_t)kSr; i + 128 < n; ++i) { sum += (double)L[i] * L[i]; ++cnt; }
+    return 20.0 * std::log10(std::sqrt(sum / (double)cnt) / (0.2 / std::sqrt(2.0)) + 1e-12);
+}
+
 int failures = 0;
 
 void report(const char* label, const Result& r, bool allowOverCeiling, bool expectQuietTail)
@@ -553,6 +574,25 @@ int main(int argc, char** argv)
         check(std::fabs(lOn - base) < std::fabs(lOff - base),
               "with the resonator alone, Keep Lo holds the sub %.2f dB closer",
               std::fabs(lOff - base) - std::fabs(lOn - base));
+    }
+
+    // ----- 8b2. no cancellation notch at the crossover ---------------------
+    // Regression guard. LR4's two bands sum to an allpass, which at the crossover sits
+    // 180 degrees from the unfiltered input - so crossfading the clean low against a
+    // FULL-RANGE dry subtracts there. That shipped once, measuring -22.5 dB at 150 Hz
+    // with Mix 60. MIX now crossfades band-for-band and the low end sits outside it.
+    std::printf("\n-- MIX must not notch at the Keep Lo crossover --\n");
+    {
+        const double full = probeDb(150.0f, 100.0f, 150.0f);
+        const double half = probeDb(150.0f,  60.0f, 150.0f);
+        const double sub100 = probeDb(45.0f, 100.0f, 150.0f);
+        const double sub60  = probeDb(45.0f,  60.0f, 150.0f);
+        std::printf("INFO 150 Hz (the crossover): Mix 100 %.2f | Mix 60 %.2f dB\n", full, half);
+        std::printf("INFO  45 Hz (kept sub):      Mix 100 %.2f | Mix 60 %.2f dB\n", sub100, sub60);
+        check(std::fabs(half - full) < 6.0,
+              "no notch at the crossover (Mix 60 is %.2f dB from Mix 100)", half - full);
+        check(std::fabs(sub60 - sub100) < 1.0,
+              "the kept sub is independent of MIX (%.2f dB apart)", sub60 - sub100);
     }
 
     // ----- 8c. TAME actually removes high end, and stays stable -------------
