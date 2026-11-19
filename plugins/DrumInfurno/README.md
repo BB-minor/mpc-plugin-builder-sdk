@@ -9,6 +9,23 @@ Three sections in one insert, voiced for drums.
 > plugin as **Drum Infurno** by **INFUR** (`uid` `ICPO`, folder
 > `INFUR - VST - Drum Infurno`).
 
+## Where the code lives
+
+The DSP is **not** in this folder. The whole chain lives in [`core/`](../../core), a plain
+C++17 library with no dependency on the MPC SDK, the VST2 ABI, JUCE or any host. This
+project is a thin MPC wrapper around it, and [`desktop/`](../../desktop) is a thin JUCE
+VST3/AU wrapper around the same library. Both build their parameters, ranges, defaults,
+value text and factory programs from one shared table, so they cannot drift apart.
+
+```
+core/          the engine            <- all the DSP
+plugins/DrumInfurno/   MPC wrapper   <- this folder
+desktop/       JUCE VST3 / AU wrapper
+```
+
+`src/EngineUnit.cpp` is a one-line unity include that pulls `core/src/Engine.cpp` into the
+MPC build, because `tools/build.py` compiles only `src/*.cpp`. It is not a copy.
+
 ## Signal order
 
 Strictly in series, in this order:

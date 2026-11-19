@@ -34,8 +34,8 @@
 //   One tan() per coefficient update (control rate, not per sample). Per sample: about a
 //   dozen multiply-adds and one fastTanh per channel.
 
-#ifndef DI_LADDER_H
-#define DI_LADDER_H
+#ifndef INFURNO_LADDER_H
+#define INFURNO_LADDER_H
 
 #include "dsp/math.h"
 #include "dsp/onepole.h"
@@ -43,7 +43,7 @@
 
 #include <cmath>
 
-namespace di {
+namespace infurno {
 
 using namespace mpc::dsp;
 
@@ -161,6 +161,6 @@ private:
     float hz_ = 20.0f;
 };
 
-} // namespace di
+} // namespace infurno
 
-#endif // DI_LADDER_H
+#endif // INFURNO_LADDER_H

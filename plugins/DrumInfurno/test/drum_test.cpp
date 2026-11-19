@@ -27,7 +27,8 @@
 //       -o /tmp/di_test plugins/DrumInfurno/test/drum_test.cpp && /tmp/di_test /tmp/out
 //   With a directory argument it writes a WAV per scenario. Exit 0 = all passed.
 
-#include "DrumInfurno.cpp"   // the plugin under test, and the framework with it
+#include "DrumInfurno.cpp"   // the MPC wrapper, and the framework with it
+#include "EngineUnit.cpp"    // the shared DSP core (one TU for this harness)
 
 #include <chrono>
 #include <cmath>
@@ -214,25 +215,25 @@ Result run(const Settings& s, const std::string& wavDir = "", const char* wavNam
     DrumLoop loop; loop.build(s.inputPeak);
 
     DrumInfurno p;
-    p.set(DrumInfurno::kOutput, s.out);
-    p.set(DrumInfurno::kMix, s.mix);
-    p.set(DrumInfurno::kDamageType, (float)s.type);
-    p.set(DrumInfurno::kDrive, s.drive);
-    p.set(DrumInfurno::kShape, s.shape);
-    p.set(DrumInfurno::kGrain, s.grain);
-    p.set(DrumInfurno::kCutLo, s.cutLo);
-    p.set(DrumInfurno::kCutMid, s.cutMid);
-    p.set(DrumInfurno::kCutHi, s.cutHi);
-    p.set(DrumInfurno::kChamber, (float)s.chamber);
-    p.set(DrumInfurno::kBore, s.bore);
-    p.set(DrumInfurno::kRing, s.ring);
-    p.set(DrumInfurno::kBloom, s.bloom);
-    p.set(DrumInfurno::kRise, s.rise);
-    p.set(DrumInfurno::kFall, s.fall);
-    p.set(DrumInfurno::kMakeup, s.makeup ? 1.0f : 0.0f);
-    p.set(DrumInfurno::kKeepLo, s.keepLo);
-    p.set(DrumInfurno::kTame, s.tame);
-    p.set(DrumInfurno::kCore, s.core);
+    p.set(infurno::kOutput, s.out);
+    p.set(infurno::kMix, s.mix);
+    p.set(infurno::kDamageType, (float)s.type);
+    p.set(infurno::kDrive, s.drive);
+    p.set(infurno::kShape, s.shape);
+    p.set(infurno::kGrain, s.grain);
+    p.set(infurno::kCutLo, s.cutLo);
+    p.set(infurno::kCutMid, s.cutMid);
+    p.set(infurno::kCutHi, s.cutHi);
+    p.set(infurno::kChamber, (float)s.chamber);
+    p.set(infurno::kBore, s.bore);
+    p.set(infurno::kRing, s.ring);
+    p.set(infurno::kBloom, s.bloom);
+    p.set(infurno::kRise, s.rise);
+    p.set(infurno::kFall, s.fall);
+    p.set(infurno::kMakeup, s.makeup ? 1.0f : 0.0f);
+    p.set(infurno::kKeepLo, s.keepLo);
+    p.set(infurno::kTame, s.tame);
+    p.set(infurno::kCore, s.core);
     p.setSafetyClipEnabled(s.clip);
 
     p.internalSetSampleRate(kSr);
@@ -331,10 +332,10 @@ double subCorrelation(const std::vector<float>& out, const std::vector<float>& i
 double probeDb(float hz, float mix, float keepLo)
 {
     DrumInfurno p;
-    p.set(DrumInfurno::kMix, mix);
-    p.set(DrumInfurno::kKeepLo, keepLo);
-    p.set(DrumInfurno::kDrive, 0.0f);
-    p.set(DrumInfurno::kMakeup, 0.0f);
+    p.set(infurno::kMix, mix);
+    p.set(infurno::kKeepLo, keepLo);
+    p.set(infurno::kDrive, 0.0f);
+    p.set(infurno::kMakeup, 0.0f);
     p.internalSetSampleRate(kSr);
     p.internalSetBlockSize(128);
     p.internalResume();
@@ -406,15 +407,15 @@ int main(int argc, char** argv)
 
     // ----- 2. the stability requirement ------------------------------------
     std::printf("\n-- hostile: DRIVE 100%% + RING 100%% + BLOOM 100%%, each algorithm --\n");
-    for (int t = 0; t < di::DamageStage::kNumTypes; ++t)
+    for (int t = 0; t < infurno::paramInfo(infurno::kDamageType).numChoices; ++t)
         for (int sh = -100; sh <= 100; sh += 100)
         {
             Settings s;
             s.type = t; s.drive = 100; s.ring = 100; s.bloom = 100; s.grain = 100;
             s.shape = (float)sh; s.mix = 100; s.rise = 0.3f; s.fall = 1000;
             char label[80];
-            std::snprintf(label, sizeof(label), "%s shape%+d grain100", di::DamageStage::typeName(t), sh);
-            char wav[80]; std::snprintf(wav, sizeof(wav), "10-max-%s-%+d", di::DamageStage::typeName(t), sh);
+            std::snprintf(label, sizeof(label), "%s shape%+d grain100", infurno::paramInfo(infurno::kDamageType).choices[t], sh);
+            char wav[80]; std::snprintf(wav, sizeof(wav), "10-max-%s-%+d", infurno::paramInfo(infurno::kDamageType).choices[t], sh);
             report(label, run(s, wavDir, wav), false, true);
         }
 
@@ -474,7 +475,7 @@ int main(int argc, char** argv)
         Result r = run(s);
         DrumLoop ref; ref.build(0.25f);
         double worst = 0.0;
-        const size_t lat = (size_t)di::kFlutterNominal;
+        const size_t lat = (size_t)infurno::latencySamples();
         for (size_t i = lat; i < r.L.size(); ++i)
             worst = std::fmax(worst, std::fabs((double)r.L[i] - ref.left[i - lat]));
         check(worst < 1e-6, "dry path matches the input delayed by %d samples (max diff %.2e)",
@@ -515,17 +516,17 @@ int main(int argc, char** argv)
 
     // ----- 8. self-oscillation proof, through the whole chain ---------------
     std::printf("\n-- impulse + 10 s silence at max Drive/Ring/Bloom (self-oscillation proof) --\n");
-    for (int t = 0; t < di::DamageStage::kNumTypes; ++t)
+    for (int t = 0; t < infurno::paramInfo(infurno::kDamageType).numChoices; ++t)
     {
         DrumInfurno p;
-        p.set(DrumInfurno::kMix, 100.0f);
-        p.set(DrumInfurno::kDamageType, (float)t);
-        p.set(DrumInfurno::kDrive, 100.0f);
-        p.set(DrumInfurno::kRing, 100.0f);
-        p.set(DrumInfurno::kBloom, 100.0f);
-        p.set(DrumInfurno::kBore, 0.25f);
-        p.set(DrumInfurno::kFall, 1000.0f);
-        p.set(DrumInfurno::kMakeup, 0.0f);     // makeup would mask a decay by raising gain
+        p.set(infurno::kMix, 100.0f);
+        p.set(infurno::kDamageType, (float)t);
+        p.set(infurno::kDrive, 100.0f);
+        p.set(infurno::kRing, 100.0f);
+        p.set(infurno::kBloom, 100.0f);
+        p.set(infurno::kBore, 0.25f);
+        p.set(infurno::kFall, 1000.0f);
+        p.set(infurno::kMakeup, 0.0f);     // makeup would mask a decay by raising gain
         p.internalSetSampleRate(kSr);
         p.internalSetBlockSize(128);
         p.internalResume();
@@ -545,7 +546,7 @@ int main(int argc, char** argv)
         }
         const double lastDb = 20.0 * std::log10(lastSecond + 1e-12);
         check(finite && lastDb < -100.0, "impulse decay, %-9s -> last second %.1f dBFS",
-              di::DamageStage::typeName(t), lastDb);
+              infurno::paramInfo(infurno::kDamageType).choices[t], lastDb);
     }
 
     // ----- 8b. KEEP LO protects the low end from the chain ------------------
@@ -561,7 +562,7 @@ int main(int argc, char** argv)
         Settings on = off; on.keepLo = 150.0f;
         Result roff = run(off, wavDir, "40-keeplo-off"), ron = run(on, wavDir, "41-keeplo-150");
         DrumLoop ref; ref.build(0.5f);
-        const size_t lag = (size_t)di::kFlutterNominal;
+        const size_t lag = (size_t)infurno::latencySamples();
         const double cOff = subCorrelation(roff.L, ref.left, 55.0f, lag);
         const double cOn  = subCorrelation(ron.L,  ref.left, 55.0f, lag);
         const double refLo = bandRmsDb(ref.left, 55.0f, true);
@@ -631,13 +632,13 @@ int main(int argc, char** argv)
     std::printf("\n-- ladder self-oscillation check: impulse, then 10 s of silence --\n");
     {
         DrumInfurno p;
-        p.set(DrumInfurno::kMix, 100.0f);
-        p.set(DrumInfurno::kDrive, 100.0f);
-        p.set(DrumInfurno::kRing, 100.0f);
-        p.set(DrumInfurno::kBloom, 100.0f);
-        p.set(DrumInfurno::kTame, 200.0f);          // lowest cutoff: most resonant setting
-        p.set(DrumInfurno::kKeepLo, 250.0f);
-        p.set(DrumInfurno::kMakeup, 0.0f);
+        p.set(infurno::kMix, 100.0f);
+        p.set(infurno::kDrive, 100.0f);
+        p.set(infurno::kRing, 100.0f);
+        p.set(infurno::kBloom, 100.0f);
+        p.set(infurno::kTame, 200.0f);          // lowest cutoff: most resonant setting
+        p.set(infurno::kKeepLo, 250.0f);
+        p.set(infurno::kMakeup, 0.0f);
         p.internalSetSampleRate(kSr);
         p.internalSetBlockSize(128);
         p.internalResume();
@@ -697,14 +698,14 @@ int main(int argc, char** argv)
         DrumInfurno a, b;
         for (DrumInfurno* p : { &a, &b })
         {
-            p->set(DrumInfurno::kMix, 100.0f);
-            p->set(DrumInfurno::kDrive, 100.0f);
-            p->set(DrumInfurno::kRing, 100.0f);
-            p->set(DrumInfurno::kBloom, 100.0f);
-            p->set(DrumInfurno::kDamageType, 1.0f);   // Tape: the most expensive path
-            p->set(DrumInfurno::kGrain, 100.0f);
-            p->set(DrumInfurno::kKeepLo, 150.0f);
-            p->set(DrumInfurno::kTame, 1200.0f);   // ladder active: the expensive path
+            p->set(infurno::kMix, 100.0f);
+            p->set(infurno::kDrive, 100.0f);
+            p->set(infurno::kRing, 100.0f);
+            p->set(infurno::kBloom, 100.0f);
+            p->set(infurno::kDamageType, 1.0f);   // Tape: the most expensive path
+            p->set(infurno::kGrain, 100.0f);
+            p->set(infurno::kKeepLo, 150.0f);
+            p->set(infurno::kTame, 1200.0f);   // ladder active: the expensive path
             p->internalSetSampleRate(kSr);
             p->internalSetBlockSize(128);
             p->internalResume();

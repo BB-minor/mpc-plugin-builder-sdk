@@ -33,8 +33,8 @@
 // Every coefficient is clamped before use and the output is NaN-checked: this runs inside
 // the MPC's own process with no sandbox.
 
-#ifndef DI_DAMAGE_H
-#define DI_DAMAGE_H
+#ifndef INFURNO_DAMAGE_H
+#define INFURNO_DAMAGE_H
 
 #include "dsp/math.h"
 #include "dsp/biquad.h"
@@ -47,7 +47,7 @@
 
 #include <cmath>
 
-namespace di {
+namespace infurno {
 
 using namespace mpc::dsp;
 
@@ -303,6 +303,6 @@ private:
     float flutterDepth_ = 0.0f;
 };
 
-} // namespace di
+} // namespace infurno
 
-#endif // DI_DAMAGE_H
+#endif // INFURNO_DAMAGE_H

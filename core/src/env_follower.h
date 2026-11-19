@@ -9,14 +9,14 @@
 //
 // Allocation free: two multiplies and a compare per sample.
 
-#ifndef DI_ENV_FOLLOWER_H
-#define DI_ENV_FOLLOWER_H
+#ifndef INFURNO_ENV_FOLLOWER_H
+#define INFURNO_ENV_FOLLOWER_H
 
 #include "dsp/math.h"
 
 #include <cmath>
 
-namespace di {
+namespace infurno {
 
 using namespace mpc::dsp;
 
@@ -44,6 +44,6 @@ private:
     float env_ = 0.0f, attack_ = 1.0f, release_ = 0.001f;
 };
 
-} // namespace di
+} // namespace infurno
 
-#endif // DI_ENV_FOLLOWER_H
+#endif // INFURNO_ENV_FOLLOWER_H

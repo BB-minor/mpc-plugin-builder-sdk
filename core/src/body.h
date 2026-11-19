@@ -28,8 +28,8 @@
 //   Type -> Chamber, Scale -> Bore, Reso -> Ring, Auto -> Bloom,
 //   env Attack -> Rise, env Release -> Fall.
 
-#ifndef DI_BODY_H
-#define DI_BODY_H
+#ifndef INFURNO_BODY_H
+#define INFURNO_BODY_H
 
 #include "dsp/math.h"
 #include "dsp/svf.h"
@@ -40,7 +40,7 @@
 
 #include <cmath>
 
-namespace di {
+namespace infurno {
 
 using namespace mpc::dsp;
 
@@ -250,6 +250,6 @@ private:
     unsigned ctrl_ = 0;
 };
 
-} // namespace di
+} // namespace infurno
 
-#endif // DI_BODY_H
+#endif // INFURNO_BODY_H
