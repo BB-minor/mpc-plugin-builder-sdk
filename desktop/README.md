@@ -21,16 +21,15 @@ few minutes. Later configures are fast.
 
 ```sh
 cd desktop
-cmake -B build -G Xcode
-cmake --build build --config Release
-```
-
-Prefer command line tools over Xcode? This works too and is usually quicker:
-
-```sh
 cmake -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build -j"$(sysctl -n hw.ncpu)"
 ```
+
+That is the whole build, and it needs only the command line tools above.
+
+> **You do not need the full Xcode app.** If you have it and prefer its generator, use
+> `cmake -B build -G Xcode` and `cmake --build build --config Release` instead — but
+> `-G Xcode` *requires* the full Xcode install, so don't reach for it otherwise.
 
 The build is **universal (arm64 + x86_64)** by default. For a faster build that only runs
 on your own machine:
